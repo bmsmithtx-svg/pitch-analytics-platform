@@ -1,8 +1,10 @@
 """Input and response contracts for unaggregated Baseball Savant pitch records."""
 
 from datetime import date, datetime
+from numbers import Number
 import re
 
+import numpy as np
 import pandas as pd
 
 MAX_WINDOW_DAYS = 30
@@ -56,7 +58,10 @@ def validate_response(
 
     Missing measurement/type values remain missing, never zero-filled. Numeric
     measurement columns are normalized to nullable numbers; nonnumeric non-null
-    values are rejected. Extra columns and upstream row order are preserved.
+    values and Booleans are rejected. Numeric date values are rejected before
+    pandas can interpret them as epoch timestamps; strings and date/datetime
+    representations retain pandas' normal parsing. Extra columns and upstream
+    row order are preserved.
     Missing identity/date values, duplicate columns, or out-of-scope rows reject
     the whole response rather than silently changing its meaning.
     """
@@ -71,6 +76,8 @@ def validate_response(
         raise ResponseValidationError("Statcast response is missing required columns: " + ", ".join(sorted(missing)))
     data = response.copy()
     try:
+        if data["game_date"].map(lambda value: isinstance(value, (Number, bool, np.bool_))).any():
+            raise ValueError("Numeric or Boolean date")
         dates = pd.to_datetime(data["game_date"], errors="raise")
         ids = pd.to_numeric(data["pitcher"], errors="raise")
         if dates.isna().any() or ids.isna().any():
@@ -80,6 +87,8 @@ def validate_response(
         data["game_date"] = dates
         data["pitcher"] = ids.astype("Int64")
         for column in ("release_speed", "pfx_x", "pfx_z"):
+            if data[column].map(lambda value: isinstance(value, (bool, np.bool_))).any():
+                raise ValueError("Boolean measurement")
             numbers = pd.to_numeric(data[column], errors="raise").astype("Float64")
             if numbers.isin([float("inf"), -float("inf")]).any():
                 raise ValueError("Nonfinite measurement")

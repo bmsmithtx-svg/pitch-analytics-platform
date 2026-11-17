@@ -1,7 +1,8 @@
 """Synthetic contracts and mocked retrieval; no live Statcast requests."""
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import Mock
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -107,3 +108,49 @@ def test_network_error_not_cached(monkeypatch):
         with pytest.raises(StatcastError, match="Check your connection"):
             service.get_pitcher_statcast(123, START, END)
     assert fetch.call_count == 2
+
+
+# Use object dtype to exercise Python/NumPy scalars and mixed upstream columns
+# before pandas has an opportunity to coerce the malformed values itself.
+@pytest.mark.parametrize("column", ["release_speed", "pfx_x", "pfx_z"])
+@pytest.mark.parametrize("value", [True, False, np.bool_(True), np.bool_(False)])
+def test_boolean_measurements_rejected(records, column, value):
+    records = pd.concat([records, records], ignore_index=True)
+    records[column] = pd.Series([1.5, value], dtype=object)
+    with pytest.raises(ResponseValidationError):
+        validate_response(records, 123, START, END)
+
+
+@pytest.mark.parametrize("value", [
+    pd.Timestamp("2024-04-01").value,
+    float(pd.Timestamp("2024-04-01").value),
+    np.int64(pd.Timestamp("2024-04-01").value),
+    np.float64(pd.Timestamp("2024-04-01").value),
+    True, False,
+])
+def test_numeric_dates_rejected(records, value):
+    records["game_date"] = pd.Series([value], dtype=object)
+    with pytest.raises(ResponseValidationError):
+        validate_response(records, 123, START, END)
+
+
+@pytest.mark.parametrize("value", [
+    "2024-04-01", date(2024, 4, 1),
+    datetime(2024, 4, 1),
+    pd.Timestamp("2024-04-01"), np.datetime64("2024-04-01"),
+])
+def test_legitimate_dates_preserved(records, value):
+    records["game_date"] = pd.Series([value], dtype=object)
+    result = validate_response(records, 123, START, END)
+    assert result.loc[0, "game_date"] == pd.Timestamp("2024-04-01")
+
+
+@pytest.mark.parametrize("column", ["release_speed", "pfx_x", "pfx_z"])
+@pytest.mark.parametrize("value", [0, -1.25, 95.5, "95.5", None, float("nan"), pd.NA])
+def test_legitimate_measurements_and_missing_values_preserved(records, column, value):
+    records[column] = pd.Series([value], dtype=object)
+    result = validate_response(records, 123, START, END)
+    if pd.isna(value):
+        assert pd.isna(result.loc[0, column])
+    else:
+        assert result.loc[0, column] == float(value)
