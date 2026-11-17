@@ -4,8 +4,44 @@ from datetime import date, timedelta
 
 import streamlit as st
 
+from pitch_arsenal import PitchArsenalResult, aggregate_pitch_arsenal
 from statcast_service import get_pitcher_statcast
 from statcast_validation import NoStatcastDataError, StatcastError
+
+
+def render_pitch_arsenal(result: PitchArsenalResult) -> None:
+    """Present the existing aggregate without rounding or filling its data."""
+    st.header("Pitch Arsenal")
+    st.metric("Unclassified pitches", result.unclassified_pitch_count)
+    st.caption(
+        "Usage percentages are calculated only from classified pitches; "
+        "unclassified pitches are excluded. Each retrieved row counts as one pitch."
+    )
+    if result.metrics.empty:
+        st.info("No classified pitches available for an arsenal summary.")
+        return
+    st.dataframe(
+        result.metrics,
+        hide_index=True,
+        alt="Pitch arsenal summary by classified Statcast pitch type",
+        column_config={
+            "pitch_type": "Pitch type",
+            "pitch_count": st.column_config.NumberColumn("Pitch count", format="%,d"),
+            "usage_pct": st.column_config.NumberColumn("Usage (%)", format="%.1f%%"),
+            "avg_release_speed_mph": st.column_config.NumberColumn("Avg velocity (mph)", format="%.1f"),
+            "max_release_speed_mph": st.column_config.NumberColumn("Max velocity (mph)", format="%.1f"),
+            "avg_spin_rate_rpm": st.column_config.NumberColumn("Avg spin (rpm)", format="%.0f"),
+            "avg_pfx_x_inches": st.column_config.NumberColumn("Avg horizontal movement (in)", format="%+.1f"),
+            "avg_pfx_z_inches": st.column_config.NumberColumn("Avg vertical movement (in)", format="%+.1f"),
+        },
+    )
+    st.caption(
+        "Source: retrieved Baseball Savant Statcast records. Averages and maxima "
+        "use available finite measurements; missing measurements remain missing, "
+        "not zero. Movement is mean pfx_x/pfx_z converted from feet to inches, "
+        "preserving Statcast signs and coordinates, without arm-side or gravity "
+        "adjustment; these are not total break metrics."
+    )
 
 
 def main() -> None:
@@ -52,7 +88,8 @@ def main() -> None:
         st.caption(f"Loaded pitcher {loaded_id}: {loaded_start} through {loaded_end} (inclusive).")
         st.metric("Statcast records", len(data))
         st.dataframe(data.head(100), hide_index=True, alt="Preview of the first 100 retrieved Statcast records")
-        st.caption("Preview limited to 100 rows. Missing measurements remain missing; no statistics are calculated.")
+        st.caption("Preview limited to 100 rows. Missing measurements remain missing.")
+        render_pitch_arsenal(aggregate_pitch_arsenal(data))
     else:
         st.info("No player data is loaded or retrieved. Submit a request to load Statcast records.")
 

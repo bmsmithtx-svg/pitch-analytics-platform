@@ -3,10 +3,12 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 1.2 — Statcast pitching data pipeline
+## Current milestone: 1.3 — Pitch arsenal analytics (Task 1.3.3)
 
 The dashboard retrieves pitcher-level Statcast records on explicit request and
-shows a record count and the first 100 rows. Performance metrics and pitch
+shows a record count, the first 100 rows, and a pitch arsenal summary calculated
+from the full retrieved dataset. Milestone 1.3 functionality is implemented and
+prepared for final review and milestone closure. Performance metrics and pitch
 visualizations remain placeholders; no baseball statistics are fabricated.
 
 ## Data retrieval usage
@@ -16,7 +18,10 @@ and click **Request data**. Both endpoints are included: April 1–30 is the
 maximum 30-day window. Reversed or longer ranges are rejected before retrieval.
 No data is fetched on page load or while editing the form. Each loaded preview
 is labeled with its submitted pitcher and dates. A failed request clears the
-previous preview so old records cannot be mistaken for new results.
+previous preview and arsenal summary so old records cannot be mistaken for new
+results. After a successful request, scroll to **Pitch Arsenal** for the per-type
+table and unclassified pitch count. Reruns reuse the loaded records; arsenal
+calculations make no additional Statcast requests.
 
 Data comes from Baseball Savant through pybaseball 2.2.7's installed
 `statcast_pitcher(start_dt=None, end_dt=None, player_id=None)` API, called with
@@ -30,9 +35,44 @@ and `pfx_z`. Speed is in mph and movement in feet, as supplied by Statcast.
 Missing pitch types and measurements remain missing, never zero-filled.
 Missing identity/date fields, duplicate columns, invalid numeric measurements,
 and rows outside the requested identity/date scope reject the response.
-All extra columns and upstream row order are preserved; no aggregation,
-deduplication, or additional game-type filtering is applied. Record count is
+All extra columns and upstream row order are preserved in the retrieved data;
+no deduplication or additional game-type filtering is applied. Arsenal aggregation
+is performed separately without changing those records. Record count is
 the number of returned rows, not a derived performance metric.
+
+## Pitch arsenal aggregation
+
+`pitch_arsenal.aggregate_pitch_arsenal(validated_data)` is a pure, offline
+calculation layer used directly by the dashboard. It returns a
+`PitchArsenalResult` with a `metrics` DataFrame and `unclassified_pitch_count`.
+The table contains pitch counts, usage percentages, mean/maximum velocity
+(mph), mean spin rate (rpm), and signed mean horizontal/vertical movement
+(inches, converted from Statcast feet by multiplying by 12).
+
+Nonblank string pitch codes are stripped of surrounding whitespace and grouped
+without a fixed whitelist. Missing, blank, and non-string codes are counted as
+unclassified and excluded from the usage denominator. Usage is each type's
+count divided by all classified pitches, multiplied by 100. Each mean uses its
+own available finite measurement count as its denominator;
+maximum velocity uses the available finite speeds. Optional `release_spin_rate`
+is supplied by Statcast in rpm. Each measurement is handled independently;
+missing columns and malformed values
+produce missing metrics rather than zeros. Rows sort by count descending, then
+pitch code ascending. Empty inputs produce an empty table with the same schema.
+Entirely unclassified data shows an explanatory message instead of an arsenal
+table. Missing measurements do not reduce pitch counts or usage. No arm-side or
+gravity adjustment is applied to movement; these direct `pfx_x`/`pfx_z` summaries
+are not total break metrics. The function docstring documents the full statistical
+and defensive-input contract.
+
+Display formatting preserves the underlying numeric precision: counts use
+thousands separators, usage uses one decimal place and a percent sign (values
+already range from 0 to 100), velocity uses one decimal place, spin uses whole
+rpm, and movement uses one decimal place with an explicit sign. Rounded usage
+may not sum to exactly 100%. Installed Streamlit 1.67.0 supports these formats;
+AppTest verifies their configuration, but final table rendering, separators,
+percent signs, signed movement, and missing-value appearance need manual browser
+verification.
 
 ## Known limitations
 
@@ -78,12 +118,18 @@ Stop the server with Control-C. Run `deactivate` to leave the virtual environmen
 ## Validation
 
 ```sh
-python -m py_compile app.py statcast_service.py statcast_validation.py tests/test_app.py tests/test_statcast.py
+python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py
 python -m pytest -q
+git diff --check
 ```
 
 The smoke test uses Streamlit's `AppTest` to render the dashboard without a
-browser or network access and checks the initial empty state.
+browser or network access. Interaction tests cover loaded summaries, repeat
+requests, missing measurements, unclassified data, use of all rows beyond the
+preview, and stale-data removal after failed requests. Aggregation tests cover
+independent measurement denominators, signed conversions, deterministic sorting,
+and input preservation. Tests block requests-based HTTP and mock retrieval.
+GitHub Actions runs the same offline suite on Python 3.12.
 
 ## Project files
 
@@ -91,9 +137,11 @@ browser or network access and checks the initial empty state.
 - `requirements.txt`: Six direct runtime and test dependencies.
 - `statcast_service.py`: Pitcher API access and successful-result caching.
 - `statcast_validation.py`: Request and response validation contracts.
+- `pitch_arsenal.py`: Pure per-pitch-type scouting metrics and unclassified count.
+- `tests/test_pitch_arsenal.py`: Offline aggregation and validation integration tests.
 - `tests/test_app.py`: Offline dashboard smoke and interaction tests.
 - `tests/test_statcast.py`: Synthetic validation and mocked API/cache tests.
 - `AGENTS.md`: Architecture, statistical documentation, security, and review standards.
 
-Statistical calculations and plotting modules will be added as those features
-are implemented. See `AGENTS.md` before contributing.
+Plotting modules will be added as those features are implemented.
+See `AGENTS.md` before contributing.
