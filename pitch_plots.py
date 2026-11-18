@@ -1,10 +1,49 @@
-"""Plotly charts for prepared Statcast coordinates; no retrieval or analytics."""
+"""Plotly charts for prepared Statcast summaries; no retrieval."""
 
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.colors import qualitative
 
 from pitch_movement import StrikeZone
+
+
+def pitch_usage_chart(metrics: pd.DataFrame) -> go.Figure:
+    """Display the existing arsenal counts and unrounded usage, without mutation.
+
+    Source: aggregate_pitch_arsenal over loaded Statcast rows. Usage (%) is
+    100 * type count / classified row count; unclassified rows are excluded.
+    Missing measurements do not affect counts. No classification substitution,
+    filtering, or recalculation is performed here. Display rounds to one decimal.
+    Empty aggregates show an annotation rather than dividing by zero.
+    """
+    ordered = metrics.sort_values(
+        ["usage_pct", "pitch_type"], ascending=[False, True]
+    )
+    fig = go.Figure()
+    if ordered.empty:
+        fig.add_annotation(text="No classified pitches available for pitch usage.",
+                           x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+    else:
+        colors = pitch_colors(ordered.pitch_type.tolist())
+        fig.add_trace(go.Bar(
+            x=ordered.usage_pct.tolist(), y=ordered.pitch_type.tolist(), orientation="h",
+            marker_color=[colors[code] for code in ordered.pitch_type],
+            customdata=ordered[["pitch_count"]].values.tolist(),
+            text=[f"{row.pitch_count:,} {'pitch' if row.pitch_count == 1 else 'pitches'} · {row.usage_pct:.1f}%"
+                  for row in ordered.itertuples()],
+            textposition="outside", cliponaxis=False,
+            hovertemplate="Pitch type: %{y}<br>Pitch count: %{customdata[0]:,d}"
+                          "<br>Usage: %{x:.1f}%<extra></extra>",
+        ))
+    fig.update_layout(
+        xaxis_title="Classified pitch usage (%)", yaxis_title="Pitch type",
+        height=max(320, 52 * len(ordered) + 120), showlegend=False,
+        margin=dict(l=20, r=160, t=30, b=60),
+    )
+    fig.update_xaxes(range=[0, 100], ticksuffix="%")
+    fig.update_yaxes(categoryorder="array", categoryarray=ordered.pitch_type.tolist(),
+                     autorange="reversed", automargin=True)
+    return fig
 
 
 def pitch_colors(types: list[str]) -> dict[str, str]:
