@@ -3,13 +3,42 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 2.1 — Pitcher search by name
+## Current milestone: 2.2 — Navigation and workflow
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
 filtering. Milestone 1.5 adds the interactive pitch usage chart. Performance
 metrics beyond descriptive swing/miss indicators remain future work.
 No player records or measurements are fabricated.
+
+## Navigation and analysis workflow
+
+Use the shared sidebar to select a pitcher and analysis dates, then choose
+**Generate analysis**. The active name (when available), MLB ID and inclusive
+dates appear above four native Streamlit tabs:
+
+1. **Pitcher Selection & Analysis**: workflow guidance, record count and an
+   expandable preview of the first 100 rows.
+2. **Pitch Arsenal**: the per-type metric table and unclassified pitch count.
+3. **Visualizations**: movement, locations, pitch-type filtering and pitch usage.
+4. **Scouting Report**: observations, sample/data-quality notes, methodology and
+   **Download scouting report (HTML)**.
+
+Navigation preserves the pitcher, loaded rows, chart filter, report timestamp
+and selected tab without another MLB lookup or Statcast request. Presentations
+use the same loaded dataset. The movement/location filter does not change usage,
+arsenal metrics or reports. The sidebar remains accessible from every tab;
+on narrow screens Streamlit collapses it behind its sidebar toggle, and the
+native tab strip can scroll horizontally. Charts use available container width.
+No custom frontend or new dependency is introduced.
+
+**Changed in 2.2:** date edits now immediately clear prior results and reports,
+just like pitcher changes. Editing controls never downloads data; choose
+**Generate analysis** to load the new request. Failed and empty requests clear
+previous results and offer a retry path. Missing data is never displayed as zero.
+Initial and selected-but-not-generated states explain the next action; spinners
+identify name lookup and Statcast retrieval, and successful analysis is labeled.
+The former placeholder performance sections have been removed.
 
 ## Pitcher search by name
 
@@ -22,10 +51,10 @@ Historical, inactive and two-way players are included; results are people, not a
 verified list of pitchers. Select the intended identity before requesting data.
 
 Names accept Unicode letters, accents, spaces, apostrophes, periods and hyphens;
-use 2–100 characters. After selection, choose dates and click **Request data**.
+use 2–100 characters. After selection, choose dates and click **Generate analysis**.
 Search and selection never download Statcast data. Changing the query, selection
 mode or effective pitcher clears prior analytics and reports to prevent stale
-identity displays. Date edits retain the loaded report until the next request.
+identity displays. Date edits clear the loaded analysis and report immediately.
 
 For the independent fallback, choose **Manual ID**, expand
 **Advanced: Enter MLB Player ID manually**, and enter the numeric ID. This works
@@ -52,11 +81,11 @@ lookup and selection tests use deterministic identity fixtures and mocked HTTP.
 
 ## Milestone 1.6 scouting reports
 
-Submit **Request data**, then scroll to **Pitcher scouting report**. The report
+Submit **Generate analysis**, then open **Scouting Report**. The report
 uses the loaded pitcher and inclusive dates, and all retrieved rows independently
-of the movement/location filter. Editing dates does not change the loaded
-report until submission; changing pitcher identity clears it immediately. Every
-submission clears old results, including failures.
+of the movement/location filter. Editing dates or changing pitcher identity
+clears the loaded report immediately. Every submission clears old results,
+including failures.
 Choose **Download scouting report (HTML)** for a self-contained, escaped,
 print-friendly report (browser Print → landscape). Its UTC generation timestamp
 is fixed at successful retrieval and stays separate from deterministic analytics.
@@ -112,7 +141,7 @@ are implemented; broader performance/command analytics remain future work.
 
 ## Milestone 1.5 pitch usage visualization
 
-After loading records, **Pitch visualizations → Pitch usage** shows an interactive
+After loading records, **Visualizations → Pitch usage** shows an interactive
 Plotly horizontal bar chart, sorted by descending usage with pitch code ascending
 for ties. Each bar displays the source pitch type, count, and percentage; hover
 shows all three. Plotly provides zoom, pan, reset, and image export. Automatic
@@ -141,7 +170,7 @@ source labels or narrow screens can require more display space.
 
 ## Milestone 1.4 methodology and usage
 
-After requesting data, use **Pitch Movement & Location Analysis → Pitch types**.
+After requesting data, open **Visualizations → Pitch Movement & Location Analysis → Pitch types**.
 All available normalized codes are selected initially. Select one or several
 codes, or clear the selection for an explicit empty state. The filter updates
 both charts and the movement summary using the full loaded dataset, without
@@ -206,13 +235,13 @@ filtering, empty states, offline regression coverage and documentation. Predicti
 
 ## Data retrieval usage
 
-Enter a positive MLBAM pitcher ID (not a player name), select start/end dates,
-and click **Request data**. Both endpoints are included: April 1–30 is the
+Use name search or enter a positive MLBAM pitcher ID in Manual ID mode, select dates,
+and click **Generate analysis**. Both endpoints are included: April 1–30 is the
 maximum 30-day window. Reversed or longer ranges are rejected before retrieval.
-No data is fetched on page load or while editing the form. Each loaded preview
-is labeled with its submitted pitcher and dates. A failed request clears the
+No data is fetched on page load, during navigation or while editing controls.
+Each loaded preview is labeled with its submitted pitcher and dates. A failed request clears the
 previous preview and arsenal summary so old records cannot be mistaken for new
-results. After a successful request, scroll to **Pitch Arsenal** for the per-type
+results. After a successful request, open **Pitch Arsenal** for the per-type
 table and unclassified pitch count. Reruns reuse the loaded records; arsenal
 calculations make no additional Statcast requests.
 
@@ -311,7 +340,7 @@ Stop the server with Control-C. Run `deactivate` to leave the virtual environmen
 ## Validation
 
 ```sh
-python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py pitch_movement.py pitch_plots.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py tests/test_pitch_movement.py tests/test_pitch_usage.py
+python -m py_compile *.py tests/*.py
 python -m pytest -q
 python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
 git diff --check
@@ -337,6 +366,7 @@ GitHub Actions runs the same offline suite on Python 3.12.
 - `pitch_arsenal.py`: Pure per-pitch-type scouting metrics and unclassified count.
 - `tests/test_pitch_arsenal.py`: Offline aggregation and validation integration tests.
 - `tests/test_app.py`: Offline dashboard smoke and interaction tests.
+- `tests/test_navigation.py`: Offline navigation persistence, date invalidation, expired selections and request-provenance tests.
 - `tests/test_statcast.py`: Synthetic validation and mocked API/cache tests.
 - `AGENTS.md`: Architecture, statistical documentation, security, and review standards.
 
