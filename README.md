@@ -3,13 +3,78 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 1.3 — Pitch arsenal analytics (Task 1.3.3)
+## Current milestone: 1.4 — Pitch movement & location analysis
 
-The dashboard retrieves pitcher-level Statcast records on explicit request and
-shows a record count, the first 100 rows, and a pitch arsenal summary calculated
-from the full retrieved dataset. Milestone 1.3 functionality is implemented and
-prepared for final review and milestone closure. Performance metrics and pitch
-visualizations remain placeholders; no baseball statistics are fabricated.
+The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
+and adds movement, plate locations, reference strike zones and local pitch-type
+filtering. Performance metrics and pitch usage charts remain future work.
+No player records or measurements are fabricated.
+
+## Milestone 1.4 methodology and usage
+
+After requesting data, use **Pitch Movement & Location Analysis → Pitch types**.
+All available normalized codes are selected initially. Select one or several
+codes, or clear the selection for an explicit empty state. The filter updates
+both charts and the movement summary using the full loaded dataset, without
+another request. Every submitted request clears the filter, including failed
+requests; the loaded pitcher/date caption identifies the active dataset.
+Classification matches the arsenal's whitespace-stripped, case-preserved codes.
+Unclassified rows are labeled separately and retain valid coordinate measurements.
+
+Source definitions: [Baseball Savant CSV documentation](https://baseballsavant.mlb.com/csv-docs).
+Horizontal movement is `pfx_x × 12`, in inches. Induced vertical movement is
+`pfx_z × 12`, in inches: gravity-adjusted movement, not total physical vertical
+displacement. Signed catcher-view coordinates are retained: positive horizontal
+is right, negative left, and positive vertical is up. Neither chart mirrors
+coordinates by pitcher handedness or labels movement arm-side/glove-side.
+
+The movement table reports arithmetic means of independently valid horizontal
+and vertical observations and their counts, plus the count with both coordinates.
+Chart centroids use only those paired observations for BOTH means, so they may
+differ from table values. Types with no paired measurements have no centroid.
+All types remain in the summary with missing means and zero coverage where
+appropriate; an empty dataset has no groups. Displayed means use one decimal;
+calculations remain unrounded. These descriptive measurements alone do not
+measure pitch quality or effectiveness. One pitch can be plotted but does not
+establish a stable trend.
+
+Locations use recorded `plate_x` and `plate_z` unchanged in feet. Both coordinates
+must be valid; all such observations appear, with transparent markers to reduce
+overplotting and counts in the legend. Equal physical axis scaling preserves
+geometry. Movement and location availability are independent; either chart can
+remain usable when the other has no observations.
+
+Per the [official Baseball Savant CSV documentation](https://baseballsavant.mlb.com/csv-docs),
+through 2025, `plate_x` and `plate_z` represent front-of-plate locations;
+beginning in 2026, they represent middle-of-plate locations aligned with ABS.
+Through 2025, `sz_top` and `sz_bot` use operator-defined strike-zone boundaries;
+beginning in 2026, they use ABS-defined boundaries. Historical comparisons
+spanning this transition require caution. PitcherIQ preserves source measurements
+without artificially adjusting historical coordinates or boundaries.
+
+Colors and marker symbols are assigned from the full loaded arsenal and remain
+stable when filtering. When the 11-color palette repeats, marker symbols change
+to distinguish pitch types; legends retain pitch-type names.
+
+The dashed representative zone spans the physical 17-inch plate width,
+`-17/24` to `+17/24` feet, with no baseball-radius expansion. Its bottom/top are
+the respective medians from rows with finite same-row boundaries satisfying
+`0 < sz_bot < sz_top` in the selected sample, regardless of location availability.
+The legend identifies the boundary-pair count. If none exist, a clearly labeled
+generic 1.5–3.5 ft reference is used. This rectangle is not every batter's exact
+individualized zone and does not classify pitches as called strikes.
+
+No deduplication or additional game-type filtering is applied. Every retrieved
+row is an observation. Missing columns, nulls, nonfinite values, Booleans and
+malformed scalar measurements are missing independently; valid zeros and signed
+values are retained. Numeric strings follow existing arsenal conventions.
+Overflow in feet-to-inches conversion is missing. Existing stricter upstream
+retrieval validation remains unchanged. No live data is needed by tests.
+
+Completed scope: movement calculations and coverage, paired-centroid chart,
+location chart and representative zone, stable within-dataset colors, pitch-type
+filtering, empty states, offline regression coverage and documentation. Later
+milestones, predictive scoring and reports remain out of scope.
 
 ## Data retrieval usage
 
@@ -118,8 +183,9 @@ Stop the server with Control-C. Run `deactivate` to leave the virtual environmen
 ## Validation
 
 ```sh
-python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py
+python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py pitch_movement.py pitch_plots.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py tests/test_pitch_movement.py
 python -m pytest -q
+python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
 git diff --check
 ```
 
@@ -143,5 +209,7 @@ GitHub Actions runs the same offline suite on Python 3.12.
 - `tests/test_statcast.py`: Synthetic validation and mocked API/cache tests.
 - `AGENTS.md`: Architecture, statistical documentation, security, and review standards.
 
-Plotting modules will be added as those features are implemented.
+- `pitch_movement.py`: Pure coordinate preparation, filtering, movement summary and zone reference.
+- `pitch_plots.py`: Plotly movement and equal-scale location figures.
+- `tests/test_pitch_movement.py`: Synthetic calculation, validity and chart-geometry coverage.
 See `AGENTS.md` before contributing.
