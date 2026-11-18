@@ -301,3 +301,37 @@ def test_scouting_report_tracks_submitted_identity_dates_and_clears(monkeypatch)
     assert not app.table
     assert "report_generated_at" not in app.session_state
     assert not any("MLBAM 456" in text.value for text in app.text)
+
+
+def test_focused_arsenal_views_preserve_values_and_loaded_state(monkeypatch):
+    import pandas as pd
+    import json
+    from pitch_arsenal import aggregate_pitch_arsenal
+
+    data = pd.DataFrame({"pitch_type": ["FF", "SL", None],
+                         "release_speed": [None, 0, 91],
+                         "pfx_x": [None, 0, 1], "pfx_z": [None, -1, 1]})
+    app, fetch = _request_app(monkeypatch, data)
+    expected = aggregate_pitch_arsenal(data).metrics
+    timestamp = app.session_state["report_generated_at"]
+    for view, columns in [
+        ("Usage", ["pitch_type", "pitch_count", "usage_pct"]),
+        ("Velocity and spin", ["pitch_type", "pitch_count", "avg_release_speed_mph",
+                               "max_release_speed_mph", "avg_spin_rate_rpm"]),
+        ("Movement", ["pitch_type", "pitch_count", "avg_pfx_x_inches", "avg_pfx_z_inches"]),
+        ("All metrics", list(expected.columns)),
+    ]:
+        app.radio(key="arsenal_metrics").set_value(view).run()
+        assert not app.exception
+        pd.testing.assert_frame_equal(app.dataframe[1].value, expected)
+        assert list(app.dataframe[1].proto.column_order) == columns
+        assert app.session_state["report_generated_at"] == timestamp
+        assert len(app.get("download_button")) == 1
+    assert fetch.call_count == 1
+    assert any("Empty measurement cells mean unavailable" in c.value for c in app.caption)
+    assert "Movement measurement coverage" in [s.value for s in app.subheader]
+    specs = [json.loads(chart.proto.spec) for chart in app.get("plotly_chart")]
+    usage = specs[-1]["data"][0]
+    usage_colors = dict(zip(usage["y"], usage["marker"]["color"]))
+    movement_colors = {trace["name"]: trace["marker"]["color"] for trace in specs[0]["data"]}
+    assert movement_colors["SL"] == usage_colors["SL"]

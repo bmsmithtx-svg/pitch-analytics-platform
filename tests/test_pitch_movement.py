@@ -26,8 +26,8 @@ def test_independent_and_paired_denominators():
     assert list(fig.data[0].x) == [7.5]
     assert list(fig.data[0].y) == [-3]
     assert list(fig.data[0].customdata) == [2]
-    assert fig.layout.xaxis.title.text == 'Horizontal Movement (inches)'
-    assert fig.layout.yaxis.title.text == 'Induced Vertical Movement (inches)'
+    assert fig.layout.xaxis.title.text == 'Horizontal movement (in)'
+    assert fig.layout.yaxis.title.text == 'Induced vertical movement (in)'
     assert fig.layout.xaxis.zeroline and fig.layout.yaxis.zeroline
     pd.testing.assert_frame_equal(raw, original)
 
@@ -71,8 +71,8 @@ def test_location_and_zone_geometry():
     assert (shape.y0, shape.y1) == (1.5, 3.5)
     assert fig.layout.yaxis.scaleanchor == 'x'
     assert fig.layout.yaxis.scaleratio == 1
-    assert fig.layout.xaxis.title.text == 'Horizontal Plate Location (feet)'
-    assert fig.layout.yaxis.title.text == 'Vertical Plate Location (feet)'
+    assert fig.layout.xaxis.title.text == 'Horizontal plate location (ft)'
+    assert fig.layout.yaxis.title.text == 'Vertical plate location (ft)'
 
 
 @pytest.mark.parametrize('data', [pd.DataFrame(), pd.DataFrame({'pitch_type': ['FF']}),

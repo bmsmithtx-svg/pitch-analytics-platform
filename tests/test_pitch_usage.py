@@ -124,3 +124,20 @@ def test_measurements_do_not_change_usage_and_long_names_are_preserved():
     assert list(fig.data[0].x) == pytest.approx([200/3, 100/3])
     assert fig.layout.yaxis.automargin
     assert fig.data[0].cliponaxis is False
+
+
+def test_usage_presentation_accepts_full_dataset_colors_without_changing_metrics():
+    """Unclassified coordinate groups must not shift usage colors."""
+    from pitch_plots import pitch_colors
+
+    metrics = aggregate_pitch_arsenal(pd.DataFrame({"pitch_type": ["FF", "SL", "FF"]})).metrics
+    original = metrics.copy(deep=True)
+    colors = pitch_colors(["FF", "SL", "Unclassified"])
+    fig = pitch_usage_chart(metrics, colors)
+    assert list(fig.data[0].marker.color) == [colors[code] for code in fig.data[0].y]
+    assert fig.layout.font.size == 14
+    assert fig.layout.hoverlabel.font.size == 14
+    assert fig.layout.margin.r == 30
+    assert fig.layout.xaxis.automargin
+    assert fig.data[0].textposition == "auto"
+    pd.testing.assert_frame_equal(metrics, original)

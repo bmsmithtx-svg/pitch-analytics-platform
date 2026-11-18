@@ -375,3 +375,28 @@ GitHub Actions runs the same offline suite on Python 3.12.
 - `tests/test_pitch_movement.py`: Synthetic calculation, validity and chart-geometry coverage.
 - `tests/test_pitch_usage.py`: Offline usage counts, ordering, empty states and label coverage.
 See `AGENTS.md` before contributing.
+
+## Milestone 2.3 dashboard presentation
+
+The existing four tabs and sidebar workflow are preserved. Bordered record and
+unclassified-count cards clarify their denominators. **Pitch Arsenal → Arsenal
+metrics** offers All metrics, Usage, Velocity and spin, and Movement views of the
+same unrounded aggregate. Focused column views reduce table width on smaller
+screens; empty measurement cells indicate unavailable values, while valid zeros
+remain zero. The complete table remains the default.
+
+Movement and location charts now stack in separate panels, giving each the full
+available width. A labeled movement coverage table distinguishes independent
+measurement means from paired chart centroids. Plotly charts share readable
+hover text, sentence-case axes with explicit units, automatic axis margins, and
+horizontal legends. Usage bars retain count/percentage text in addition to color.
+All charts use the same full-dataset pitch-code color map, including when
+unclassified rows have coordinates; movement/location symbols and labels remain
+available alongside colors. Source pitch codes are preserved without inferred
+pitch names. Tables may still scroll internally when the full metric view or
+long source codes exceed the available width.
+
+These are presentation changes only: retrieval, caching, 30-day validation,
+statistical definitions, chart filtering, report generation/HTML export and
+stale-result guards remain unchanged. No new dependency or live-data request is
+introduced by presentation controls.

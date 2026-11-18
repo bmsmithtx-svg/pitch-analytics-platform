@@ -24,7 +24,8 @@ from pitcher_search import (
 def render_pitch_arsenal(result: PitchArsenalResult) -> None:
     """Present the existing aggregate without rounding or filling its data."""
     st.header("Pitch Arsenal")
-    st.metric("Unclassified pitches", result.unclassified_pitch_count)
+    st.metric("Unclassified pitches", result.unclassified_pitch_count, border=True,
+              help="Rows without a usable source pitch classification; excluded from usage.")
     st.caption(
         "Usage percentages are calculated only from classified pitches; "
         "unclassified pitches are excluded. Each retrieved row counts as one pitch."
@@ -32,8 +33,23 @@ def render_pitch_arsenal(result: PitchArsenalResult) -> None:
     if result.metrics.empty:
         st.info("No classified pitches available for an arsenal summary.")
         return
+    st.subheader("Pitch-type comparison")
+    detail = st.radio(
+        "Arsenal metrics", ["All metrics", "Usage", "Velocity and spin", "Movement"],
+        horizontal=True, key="arsenal_metrics",
+    )
+    groups = {
+        "All metrics": list(result.metrics.columns),
+        "Usage": ["pitch_type", "pitch_count", "usage_pct"],
+        "Velocity and spin": ["pitch_type", "pitch_count", "avg_release_speed_mph",
+                              "max_release_speed_mph", "avg_spin_rate_rpm"],
+        "Movement": ["pitch_type", "pitch_count", "avg_pfx_x_inches", "avg_pfx_z_inches"],
+    }
+    st.caption("Choose a focused view for smaller screens. Empty measurement cells mean unavailable, not zero.")
     st.dataframe(
         result.metrics,
+        column_order=groups[detail],
+        width="stretch",
         hide_index=True,
         alt="Pitch arsenal summary by classified Statcast pitch type",
         column_config={
@@ -70,15 +86,17 @@ def render_movement_location(data: pd.DataFrame) -> None:
     colors = pitch_colors(options)
     summary = movement_summary(rows)
     locations = valid_locations(rows)
-    movement, location = st.columns(2)
+    movement, location = st.container(border=True), st.container(border=True)
     with movement:
         st.subheader("Pitch movement")
+        st.caption("Paired mean movement by pitch type · inches · catcher view")
         if summary.valid_paired.sum():
             st.plotly_chart(movement_chart(summary, colors), alt="Paired mean pitch movement by pitch type")
         else:
             st.info("No pitches have both movement measurements in this selection.")
     with location:
         st.subheader("Pitch location")
+        st.caption("Individual recorded locations · feet · catcher view")
         if not locations.empty:
             zone = strike_zone_reference(rows)
             st.plotly_chart(location_chart(locations, zone, colors), alt="Pitch locations with representative strike zone")
@@ -86,6 +104,7 @@ def render_movement_location(data: pd.DataFrame) -> None:
         else:
             st.info("No pitches have both plate location measurements in this selection.")
     if not summary.empty:
+        st.subheader("Movement measurement coverage")
         st.dataframe(summary.drop(columns=["paired_horizontal_inches", "paired_vertical_inches"]),
                      hide_index=True, alt="Movement averages and valid observation counts",
                      column_config={
@@ -259,7 +278,9 @@ def render_pitch_usage(data: pd.DataFrame, arsenal: PitchArsenalResult) -> None:
         st.info("No classified pitches available for pitch usage.")
     else:
         st.plotly_chart(
-            pitch_usage_chart(arsenal.metrics), width="stretch", key="pitch_usage",
+            pitch_usage_chart(arsenal.metrics, pitch_colors(
+                prepare_pitch_coordinates(data).pitch_type.unique().tolist()
+            )), width="stretch", key="pitch_usage",
             alt="Pitch counts and classified usage percentages, highest usage first",
         )
 
@@ -287,7 +308,7 @@ def main() -> None:
         st.caption("Maximum 30 days, including both endpoints. Data loads only on request.")
 
     st.title("Pitch Analytics Platform")
-    st.write("Professional MLB pitching analytics and scouting insights, powered by Statcast data.")
+    st.caption("MLB pitch arsenal, movement, location and descriptive scouting · Statcast")
     candidate = st.session_state.get("selected_candidate")
     active_name = candidate.full_name if candidate is not None else "Name unavailable"
     active_id = st.session_state.get("resolved_player_id")
@@ -346,7 +367,8 @@ def main() -> None:
         if loaded is not None:
             loaded_id, loaded_start, loaded_end, data = loaded
             st.caption(f"Loaded pitcher {loaded_id}: {loaded_start} through {loaded_end} (inclusive).")
-            st.metric("Statcast records", len(data))
+            st.metric("Statcast records", len(data), border=True,
+                      help="Returned rows in the loaded request, including unclassified pitches.")
             with st.expander("Retrieved records preview"):
                 st.dataframe(data.head(100), hide_index=True,
                              alt="Preview of the first 100 retrieved Statcast records")
@@ -362,8 +384,8 @@ def main() -> None:
         render_pitch_arsenal(arsenal)
     with charts:
         render_movement_location(data)
-        st.divider()
-        render_pitch_usage(data, arsenal)
+        with st.container(border=True):
+            render_pitch_usage(data, arsenal)
     with report_view:
         render_scouting_report(data, loaded_id, loaded_start, loaded_end)
 
