@@ -39,7 +39,8 @@ def test_request_preview_and_failure_clear_previous_result(monkeypatch) -> None:
     assert len(app.dataframe[0].value) == 1
     app.run()
     assert fetch.call_count == 1
-    assert len(app.dataframe) == 1
+    assert len(app.dataframe) == 2
+    assert app.dataframe[1].value["valid_paired"].eq(0).all()
     fetch.side_effect = StatcastError("Unable to retrieve data")
     app.sidebar.button[0].click().run()
     assert not app.exception
@@ -99,7 +100,8 @@ def test_arsenal_success_formats_and_repeat_use(monkeypatch):
     app.run()
     assert not app.exception
     assert fetch.call_count == 1
-    assert len(app.dataframe) == 2
+    assert len(app.dataframe) == 3
+    assert "valid_paired" in app.dataframe[-1].value.columns
     fetch.return_value = data.iloc[[1]].copy()
     app.sidebar.button[0].click().run()
     assert not app.exception
@@ -130,7 +132,7 @@ def test_arsenal_empty_and_unclassified(monkeypatch):
     for data, count in [(pd.DataFrame({"pitch_type": []}), 0),
                         (pd.DataFrame({"pitch_type": [None, "", " "]}), 3)]:
         app, _ = _request_app(monkeypatch, data)
-        assert len(app.dataframe) == 1  # Preserve preview, omit empty arsenal table.
+        assert len(app.dataframe) == (1 if data.empty else 2)  # Include unclassified movement coverage.
         assert app.metric[1].value == str(count)
         assert any("No classified pitches" in info.value for info in app.info)
 
@@ -143,7 +145,8 @@ def test_arsenal_cleared_for_all_retrieval_failures(monkeypatch):
 
     for error in [InputValidationError, NoStatcastDataError, ResponseValidationError, StatcastError]:
         app, fetch = _request_app(monkeypatch, pd.DataFrame({"pitch_type": ["FF"]}))
-        assert len(app.dataframe) == 2
+        assert len(app.dataframe) == 3
+        assert "valid_paired" in app.dataframe[-1].value.columns
         fetch.side_effect = error("Request failed")
         app.sidebar.button[0].click().run()
         assert not app.exception
@@ -159,7 +162,8 @@ def test_arsenal_cleared_for_all_retrieval_failures(monkeypatch):
         fetch.side_effect = None
         app.sidebar.button[0].click().run()
         assert not app.exception
-        assert len(app.dataframe) == 2
+        assert len(app.dataframe) == 3
+        assert "valid_paired" in app.dataframe[-1].value.columns
         assert fetch.call_count == 3
 
 
@@ -176,3 +180,46 @@ def test_arsenal_uses_full_result_beyond_preview(monkeypatch):
     app.run()
     assert not app.exception
     assert fetch.call_count == 1
+
+
+def test_movement_filter_reset_and_independent_charts(monkeypatch):
+    import json
+    import pandas as pd
+    from statcast_validation import StatcastError
+
+    data = pd.DataFrame({'pitch_type': ['FF', 'SL'], 'pfx_x': [1, None],
+                         'pfx_z': [2, None], 'plate_x': [None, -1], 'plate_z': [None, 2]})
+    app, fetch = _request_app(monkeypatch, data)
+    assert app.multiselect[0].value == ['FF', 'SL']
+    assert len(app.get('plotly_chart')) == 2
+    app.multiselect[0].set_value(['SL']).run()
+    assert not app.exception
+    assert fetch.call_count == 1
+    assert app.dataframe[-1].value.pitch_type.tolist() == ['SL']
+    assert app.dataframe[-1].value.valid_paired.tolist() == [0]
+    assert len(app.get('plotly_chart')) == 1
+    spec = json.loads(app.get('plotly_chart')[0].proto.spec)
+    assert spec['data'][0]['x'] == [-1]
+    app.multiselect[0].set_value(['FF']).run()
+    assert not app.exception
+    assert len(app.get('plotly_chart')) == 1
+    spec = json.loads(app.get('plotly_chart')[0].proto.spec)
+    assert spec['data'][0]['x'] == [12]
+    app.multiselect[0].set_value([]).run()
+    assert not app.exception
+    assert not app.get('plotly_chart')
+    assert any('Select at least one' in i.value for i in app.info)
+    fetch.return_value = data.iloc[[0]]
+    app.sidebar.text_input[0].set_value('456')
+    from datetime import date
+    app.sidebar.date_input[0].set_value(date(2026, 1, 1))
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert app.multiselect[0].options == ['FF']
+    assert app.multiselect[0].value == ['FF']
+    assert fetch.call_count == 2
+    fetch.side_effect = StatcastError('Request failed')
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert not app.multiselect and not app.get('plotly_chart')
+    assert not app.dataframe
