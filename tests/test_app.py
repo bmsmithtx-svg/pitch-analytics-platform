@@ -213,6 +213,7 @@ def test_movement_filter_reset_and_independent_charts(monkeypatch):
     app.sidebar.text_input[0].set_value('456')
     from datetime import date
     app.sidebar.date_input[0].set_value(date(2026, 1, 1))
+    app.sidebar.date_input[1].set_value(date(2026, 1, 30))
     app.sidebar.button[0].click().run()
     assert not app.exception
     assert app.multiselect[0].options == ['FF']
@@ -269,3 +270,31 @@ def test_usage_empty_and_unclassified_messages(monkeypatch):
         app.run()
         assert not app.exception
         assert fetch.call_count == 1
+
+
+def test_scouting_report_tracks_submitted_identity_dates_and_clears(monkeypatch):
+    from datetime import date
+    import pandas as pd
+    from statcast_validation import StatcastError
+
+    app, fetch = _request_app(monkeypatch, pd.DataFrame({"pitch_type": ["FF"], "release_speed": [95]}))
+    assert any("MLBAM 123" in text.value for text in app.text)
+    assert len(app.get("download_button")) == 1
+    timestamp = app.session_state["report_generated_at"]
+    app.run()
+    assert app.session_state["report_generated_at"] == timestamp
+    app.sidebar.text_input[0].set_value("456")
+    app.sidebar.date_input[0].set_value(date(2025, 4, 1))
+    app.sidebar.date_input[1].set_value(date(2025, 4, 3))
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert any("MLBAM 456" in text.value for text in app.text)
+    assert any("2025-04-01 through 2025-04-03" in text.value for text in app.text)
+    assert not any("MLBAM 123" in text.value for text in app.text)
+    fetch.side_effect = StatcastError("Retrieval failed")
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert not app.get("download_button")
+    assert not app.table
+    assert "report_generated_at" not in app.session_state
+    assert not any("MLBAM 456" in text.value for text in app.text)

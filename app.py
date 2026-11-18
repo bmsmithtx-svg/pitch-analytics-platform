@@ -1,6 +1,6 @@
 """Streamlit entry point for the Pitch Analytics Platform."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 import streamlit as st
@@ -11,6 +11,8 @@ from pitch_movement import (
 )
 from pitch_plots import movement_chart, location_chart, pitch_colors, pitch_usage_chart
 from pitch_arsenal import PitchArsenalResult, aggregate_pitch_arsenal
+from scouting_report import build_scouting_report, METHODS, SOURCE
+from report_export import export_report_html, report_table
 from statcast_service import get_pitcher_statcast
 from statcast_validation import NoStatcastDataError, StatcastError
 
@@ -105,6 +107,38 @@ def render_movement_location(data: pd.DataFrame) -> None:
     )
 
 
+def render_scouting_report(
+    data: pd.DataFrame, pitcher_id: str, start_date: date, end_date: date
+) -> None:
+    """Use the active loaded request; report is never stored as separate stale state."""
+    report = build_scouting_report(data, pitcher_id, start_date, end_date)
+    st.header("Pitcher scouting report")
+    st.text(f"{report.pitcher_name or 'Name unavailable'} · MLBAM {report.pitcher_id}")
+    st.text(f"{report.start_date} through {report.end_date} (inclusive); "
+            f"{report.total_pitches:,} pitches analyzed")
+    st.caption("Relevant movement, location and usage visualizations appear in the existing sections. "
+               "The report uses all loaded rows, independently of the chart filter.")
+    st.subheader("Arsenal summary")
+    if report.arsenal.empty:
+        st.info("No classified pitches available for this report.")
+    else:
+        st.table(report_table(report), alt="Scouting arsenal metrics and valid sample counts")
+    st.subheader("Automated scouting observations")
+    for observation in report.observations:
+        st.text(observation)
+    st.subheader("Sample size and data quality")
+    for note in report.notes:
+        st.text(note)
+    st.caption(METHODS)
+    st.caption(SOURCE)
+    generated_at = st.session_state["report_generated_at"]
+    st.caption(f"Report generated: {generated_at.isoformat()}")
+    st.download_button("Download scouting report (HTML)",
+                       export_report_html(report, generated_at),
+                       file_name=f"scouting-report-{report.pitcher_id}-{start_date}-{end_date}.html",
+                       mime="text/html", key="scouting_download")
+
+
 def main() -> None:
     """Render the dashboard and retrieve data only after explicit submission."""
     st.set_page_config(
@@ -133,11 +167,13 @@ def main() -> None:
         # Clear the previous result so a failed request cannot show stale rows.
         st.session_state.pop("analysis_pitch_types", None)
         st.session_state.pop("statcast_result", None)
+        st.session_state.pop("report_generated_at", None)
         st.session_state.pop("statcast_message", None)
         try:
             with st.spinner("Retrieving Statcast data…"):
                 data = get_pitcher_statcast(pitcher_id, start_date, end_date)
             st.session_state["statcast_result"] = (pitcher_id.strip(), start_date, end_date, data)
+            st.session_state["report_generated_at"] = datetime.now(timezone.utc)
         except NoStatcastDataError as exc:
             st.session_state["statcast_message"] = ("info", str(exc))
         except StatcastError as exc:
@@ -155,6 +191,7 @@ def main() -> None:
         arsenal = aggregate_pitch_arsenal(data)
         render_pitch_arsenal(arsenal)
         render_movement_location(data)
+        render_scouting_report(data, loaded_id, loaded_start, loaded_end)
     else:
         st.info("No player data is loaded or retrieved. Submit a request to load Statcast records.")
 

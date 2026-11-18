@@ -3,13 +3,72 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 1.5 — Pitch usage visualization
+## Current milestone: 1.6 — Automated pitcher scouting reports
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
 filtering. Milestone 1.5 adds the interactive pitch usage chart. Performance
-metrics remain future work.
+metrics beyond descriptive swing/miss indicators remain future work.
 No player records or measurements are fabricated.
+
+## Milestone 1.6 scouting reports
+
+Submit **Request data**, then scroll to **Pitcher scouting report**. The report
+uses the loaded pitcher and inclusive dates, and all retrieved rows independently
+of the movement/location filter. Editing the form does not change the loaded
+report until submission. Every submission clears old results, including failures.
+Choose **Download scouting report (HTML)** for a self-contained, escaped,
+print-friendly report (browser Print → landscape). Its UTC generation timestamp
+is fixed at successful retrieval and stays separate from deterministic analytics.
+No additional retrieval, AI service or dependency is introduced. Existing charts
+remain in their dashboard sections; the HTML export contains tables and text.
+
+The report reuses `aggregate_pitch_arsenal` without changing its definitions,
+source-code naming, sorting or classified usage denominator. It adds minimum
+velocity (`release_speed`, mph), independent mean release coordinates
+(`release_pos_x/y/z`, feet, source signs retained), and per-type valid measurement
+counts for speed, spin, movement and release positions. Minimum/maximum velocity
+are the observed range, not estimated percentiles. Required retrieval columns
+remain unchanged; `release_spin_rate`, release positions, `description`, and
+`player_name` are optional. A single unique nonblank source name is shown;
+otherwise the name is explicitly unavailable and MLBAM ID identifies the report.
+Unknown nonblank pitch codes remain separate types, without inferred names.
+
+Whiff percentage is 100 × misses / recognized swings. Swing descriptions are
+`swinging_strike`, `swinging_strike_blocked`, `foul_tip`, `foul`, `hit_into_play`,
+`foul_bunt`, `missed_bunt`, and `bunt_foul_tip`. Misses are `swinging_strike`,
+`swinging_strike_blocked`, and `missed_bunt`; foul tips are swings, not misses.
+Other/missing descriptions are excluded; no recognized swings yields N/A.
+This is a descriptive source-event ratio, not a claim of pitch effectiveness.
+No command metric or predictive model is introduced.
+
+Each mean uses its own finite sample. Missing columns, malformed optional
+measurements, booleans, infinities and conversion overflows are unavailable,
+never zero-filled. The report shows valid counts per type and valid/unavailable
+counts across all rows for every measurement. Required-field retrieval validation
+still rejects malformed responses. Descriptions outside the swing set can be
+legitimate takes, unknown values or missing; a coverage note discloses this
+limitation. No rows are silently removed from pitch counts. No returned rows
+does not establish zero pitches thrown. Existing data source, game-type coverage,
+30-day limit and measurement definitions below apply unchanged.
+
+Observations describe observed arsenal size, highest/next usage (ties resolved
+by source code), and the difference between fastest/slowest mean velocities
+among types with at least **20 valid speed measurements each**. This is a
+conservative operational threshold, not a significance test; smaller samples
+suppress velocity comparisons. All reports caution about sample stability.
+Automated observations are descriptive, not professional scouting grades,
+player comparisons, pitch-quality scores or predictive assessments.
+
+`scouting_report.py` separates report construction and observation rules from
+rendering. `report_export.py` shares the formatted table between dashboard and
+HTML, explicitly shows N/A, escapes external text, and includes full methodology,
+data quality, source and sample counts. `tests/test_scouting_report.py` uses only
+synthetic fixtures; `tests/test_app.py` covers report identity/date changes and
+failed-request clearing. Run the full offline suite with `.venv/bin/python -m pytest -q`; use the
+compilation and whitespace checks in **Validation** below. No static-analysis checker
+is configured. Roadmap: milestones 1.3–1.5 analytics and 1.6 descriptive reports
+are implemented; broader performance/command analytics remain future work.
 
 ## Milestone 1.5 pitch usage visualization
 
@@ -103,8 +162,7 @@ retrieval validation remains unchanged. No live data is needed by tests.
 
 Completed scope: movement calculations and coverage, paired-centroid chart,
 location chart and representative zone, stable within-dataset colors, pitch-type
-filtering, empty states, offline regression coverage and documentation. Later
-milestones, predictive scoring and reports remain out of scope.
+filtering, empty states, offline regression coverage and documentation. Predictive scoring remains out of scope; descriptive reports are added in 1.6.
 
 ## Data retrieval usage
 
