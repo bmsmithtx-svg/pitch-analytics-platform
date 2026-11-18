@@ -59,6 +59,7 @@ def render_pitch_arsenal(result: PitchArsenalResult) -> None:
 def render_movement_location(data: pd.DataFrame) -> None:
     """Filter already loaded rows; render each chart independently."""
     st.header("Pitch Movement & Location Analysis")
+    st.caption("Filter movement and location charts; usage and reports retain all loaded pitches.")
     rows = prepare_pitch_coordinates(data)
     options = sorted(rows.pitch_type.unique().tolist())
     selected = st.multiselect("Pitch types", options, default=options, key="analysis_pitch_types")
@@ -120,7 +121,7 @@ def render_scouting_report(
     st.text(f"{report.pitcher_name or 'Name unavailable'} · MLBAM {report.pitcher_id}")
     st.text(f"{report.start_date} through {report.end_date} (inclusive); "
             f"{report.total_pitches:,} pitches analyzed")
-    st.caption("Relevant movement, location and usage visualizations appear in the existing sections. "
+    st.caption("Movement, location and usage charts are in Visualizations. "
                "The report uses all loaded rows, independently of the chart filter.")
     st.subheader("Arsenal summary")
     if report.arsenal.empty:
@@ -185,7 +186,8 @@ def render_pitcher_selection() -> str:
             clear_search_selection()
             try:
                 normalized = normalize_query(query)
-                candidates = cached_player_search(normalized.casefold())
+                with st.spinner("Searching MLB player identities…"):
+                    candidates = cached_player_search(normalized.casefold())
                 st.session_state["search_results_query"] = normalized
                 st.session_state["search_candidates"] = candidates
             except PitcherSearchError as exc:
@@ -210,6 +212,11 @@ def render_pitcher_selection() -> str:
                 if selected is None:
                     st.caption("Select the intended player. Historical and two-way players are included.")
                     by_id = {c.player_id: c for c in candidates}
+                    if (st.session_state.get("candidate_id") is not None
+                            and st.session_state["candidate_id"] not in by_id):
+                        st.session_state.pop("candidate_id", None)
+                        clear_loaded_analysis()
+                        st.warning("The previous player selection is unavailable. Select a matching player again.")
                     candidate_id = st.selectbox("Matching players", list(by_id), index=None,
                                                 format_func=lambda value: by_id[value].label(),
                                                 key="candidate_id")
@@ -237,36 +244,75 @@ def render_pitcher_selection() -> str:
     return pitcher_id
 
 
-def main() -> None:
-    """Render the dashboard and retrieve data only after explicit submission."""
-    st.set_page_config(
-        page_title="Pitch Analytics Platform",
-        page_icon="⚾",
-        layout="wide",
+def render_pitch_usage(data: pd.DataFrame, arsenal: PitchArsenalResult) -> None:
+    """Present classified usage from all loaded rows, without chart filtering."""
+    st.subheader("Pitch usage")
+    st.caption(
+        f"Unclassified pitches: {arsenal.unclassified_pitch_count:,} (excluded). "
+        "Usage = pitch-type count / all classified pitches × 100. "
+        "Uses all loaded rows, independently of the movement/location filter. "
+        "Displayed percentages round to one decimal and may not total exactly 100%."
     )
+    if data.empty:
+        st.info("No pitch records available for pitch usage.")
+    elif arsenal.metrics.empty:
+        st.info("No classified pitches available for pitch usage.")
+    else:
+        st.plotly_chart(
+            pitch_usage_chart(arsenal.metrics), width="stretch", key="pitch_usage",
+            alt="Pitch counts and classified usage percentages, highest usage first",
+        )
 
+
+def main() -> None:
+    """Render one dashboard; only explicit submission can retrieve Statcast rows."""
+    st.set_page_config(
+        page_title="Pitch Analytics Platform", page_icon="⚾", layout="wide",
+    )
     with st.sidebar:
         st.header("Pitcher selection")
         pitcher_id = render_pitcher_selection()
-        with st.form("statcast_request"):
-            start_date = st.date_input("Start date", value=date.today() - timedelta(days=29))
-            end_date = st.date_input("End date", value=date.today())
-            submitted = st.form_submit_button("Request data", key="request_data")
+        st.subheader("Analysis dates")
+        # Outside a form so edits invalidate results immediately, before another
+        # view can present rows or a report from the old dates. No edit fetches data.
+        start_date = st.date_input(
+            "Start date", value=date.today() - timedelta(days=29),
+            key="analysis_start", on_change=clear_loaded_analysis,
+        )
+        end_date = st.date_input(
+            "End date", value=date.today(), key="analysis_end",
+            on_change=clear_loaded_analysis,
+        )
+        submitted = st.button("Generate analysis", key="request_data", type="primary", width="stretch")
         st.caption("Maximum 30 days, including both endpoints. Data loads only on request.")
 
     st.title("Pitch Analytics Platform")
-    st.write(
-        "Professional MLB pitching analytics and scouting insights, "
-        "powered by Statcast data."
-    )
-    st.header("Statcast data")
-    arsenal = None
+    st.write("Professional MLB pitching analytics and scouting insights, powered by Statcast data.")
+    candidate = st.session_state.get("selected_candidate")
+    active_name = candidate.full_name if candidate is not None else "Name unavailable"
+    active_id = st.session_state.get("resolved_player_id")
+    with st.container(border=True):
+        if active_id is None:
+            st.text("No pitcher selected")
+        else:
+            st.text(f"Active pitcher: {active_name} · MLB ID {active_id}")
+        st.text(f"Analysis dates: {start_date} through {end_date} (inclusive)")
+
+    # Guard provenance independently of widget callbacks (including restored state).
+    loaded = st.session_state.get("statcast_result")
+    if loaded is not None:
+        try:
+            request = validate_request(pitcher_id, start_date, end_date)
+            if request != validate_request(*loaded[:3]):
+                clear_loaded_analysis()
+        except StatcastError:
+            clear_loaded_analysis()
+
     if submitted:
-        # Clear the previous result so a failed request cannot show stale rows.
         clear_loaded_analysis()
         try:
             validate_request(pitcher_id, start_date, end_date)
-            with st.spinner("Retrieving Statcast data…"):
+            with st.spinner("Generating analysis: retrieving Statcast data…"):
                 data = get_pitcher_statcast(pitcher_id, start_date, end_date)
             st.session_state["statcast_result"] = (pitcher_id.strip(), start_date, end_date, data)
             st.session_state["report_generated_at"] = datetime.now(timezone.utc)
@@ -275,54 +321,51 @@ def main() -> None:
         except StatcastError as exc:
             st.session_state["statcast_message"] = ("error", str(exc))
 
+    loaded = st.session_state.get("statcast_result")
     if "statcast_message" in st.session_state:
         level, message = st.session_state["statcast_message"]
         getattr(st, level)(message)
-    elif "statcast_result" in st.session_state:
-        loaded_id, loaded_start, loaded_end, data = st.session_state["statcast_result"]
-        st.caption(f"Loaded pitcher {loaded_id}: {loaded_start} through {loaded_end} (inclusive).")
-        st.metric("Statcast records", len(data))
-        st.dataframe(data.head(100), hide_index=True, alt="Preview of the first 100 retrieved Statcast records")
-        st.caption("Preview limited to 100 rows. Missing measurements remain missing.")
-        arsenal = aggregate_pitch_arsenal(data)
-        render_pitch_arsenal(arsenal)
-        render_movement_location(data)
-        render_scouting_report(data, loaded_id, loaded_start, loaded_end)
+        st.caption("Adjust the pitcher or dates, or choose Generate analysis to retry.")
+    elif loaded is not None:
+        st.success("Analysis ready. Explore the arsenal, visualizations, or scouting report below.")
+    elif active_id is None:
+        st.info("No player data is loaded or retrieved. Select a pitcher in the sidebar, then generate analysis.")
     else:
-        st.info("No player data is loaded or retrieved. Submit a request to load Statcast records.")
+        st.info("Pitcher selected. Choose dates in the sidebar, then select Generate analysis.")
 
-    st.header("Performance metrics")
-    st.caption("Pitching performance summaries will appear here once data is available.")
-    st.info("No performance metrics available yet.")
+    # These native tabs deliberately keep the inexpensive in-memory presentations
+    # mounted: chart filters survive navigation and no tab can initiate retrieval.
+    # Tracking the selected tab also preserves it through unrelated widget reruns.
+    overview, arsenal_view, charts, report_view = st.tabs(
+        ["Pitcher Selection & Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report"],
+        key="analysis_section", on_change="rerun",
+    )
+    with overview:
+        st.header("Pitcher selection and analysis")
+        st.caption("Select a pitcher and dates in the sidebar. Generate analysis once, then explore the tabs.")
+        if loaded is not None:
+            loaded_id, loaded_start, loaded_end, data = loaded
+            st.caption(f"Loaded pitcher {loaded_id}: {loaded_start} through {loaded_end} (inclusive).")
+            st.metric("Statcast records", len(data))
+            with st.expander("Retrieved records preview"):
+                st.dataframe(data.head(100), hide_index=True,
+                             alt="Preview of the first 100 retrieved Statcast records")
+                st.caption("Preview limited to 100 rows. Missing measurements remain missing.")
+    if loaded is None:
+        for view in (arsenal_view, charts, report_view):
+            with view:
+                st.info("Load Statcast records with Generate analysis in the sidebar to use this section.")
+        return
 
-    st.header("Pitch visualizations")
-    movement, usage = st.columns(2)
-    with movement:
-        st.subheader("Pitch movement")
-        if "statcast_result" in st.session_state:
-            st.caption("See Pitch Movement & Location Analysis above.")
-        else:
-            st.info("Pitch movement charts will appear here.")
-    with usage:
-        st.subheader("Pitch usage")
-        if arsenal is None:
-            st.info("Load Statcast records to view pitch usage.")
-        else:
-            st.caption(
-                f"Unclassified pitches: {arsenal.unclassified_pitch_count:,} (excluded). "
-                "Usage = pitch-type count / all classified pitches × 100. "
-                "Uses all loaded rows, independently of the movement/location filter. "
-                "Displayed percentages round to one decimal and may not total exactly 100%."
-            )
-            if data.empty:
-                st.info("No pitch records available for pitch usage.")
-            elif arsenal.metrics.empty:
-                st.info("No classified pitches available for pitch usage.")
-            else:
-                st.plotly_chart(
-                    pitch_usage_chart(arsenal.metrics), width="stretch", key="pitch_usage",
-                    alt="Pitch counts and classified usage percentages, highest usage first",
-                )
+    arsenal = aggregate_pitch_arsenal(data)
+    with arsenal_view:
+        render_pitch_arsenal(arsenal)
+    with charts:
+        render_movement_location(data)
+        st.divider()
+        render_pitch_usage(data, arsenal)
+    with report_view:
+        render_scouting_report(data, loaded_id, loaded_start, loaded_end)
 
 
 if __name__ == "__main__":
