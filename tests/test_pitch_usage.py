@@ -78,9 +78,10 @@ def test_arsenal_aggregates_once_per_loaded_dashboard_render(monkeypatch):
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py')).run()
     assert not app.exception
     fetch.assert_not_called()
+    app.sidebar.radio(key="selection_source").set_value("Manual ID").run()
     aggregate.assert_not_called()
-    app.sidebar.text_input[0].set_value('123')
-    app.sidebar.button[0].click().run()
+    app.sidebar.text_input(key="pitcher_id").set_value('123')
+    app.sidebar.button(key="request_data").click().run()
 
     for render in range(3):
         assert not app.exception
