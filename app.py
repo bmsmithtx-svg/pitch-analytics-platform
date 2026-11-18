@@ -9,7 +9,7 @@ from pitch_movement import (
     filter_pitch_types, movement_summary, prepare_pitch_coordinates,
     strike_zone_reference, valid_locations,
 )
-from pitch_plots import movement_chart, location_chart, pitch_colors
+from pitch_plots import movement_chart, location_chart, pitch_colors, pitch_usage_chart
 from pitch_arsenal import PitchArsenalResult, aggregate_pitch_arsenal
 from statcast_service import get_pitcher_statcast
 from statcast_validation import NoStatcastDataError, StatcastError
@@ -128,6 +128,7 @@ def main() -> None:
         "powered by Statcast data."
     )
     st.header("Statcast data")
+    arsenal = None
     if submitted:
         # Clear the previous result so a failed request cannot show stale rows.
         st.session_state.pop("analysis_pitch_types", None)
@@ -151,7 +152,8 @@ def main() -> None:
         st.metric("Statcast records", len(data))
         st.dataframe(data.head(100), hide_index=True, alt="Preview of the first 100 retrieved Statcast records")
         st.caption("Preview limited to 100 rows. Missing measurements remain missing.")
-        render_pitch_arsenal(aggregate_pitch_arsenal(data))
+        arsenal = aggregate_pitch_arsenal(data)
+        render_pitch_arsenal(arsenal)
         render_movement_location(data)
     else:
         st.info("No player data is loaded or retrieved. Submit a request to load Statcast records.")
@@ -170,7 +172,24 @@ def main() -> None:
             st.info("Pitch movement charts will appear here.")
     with usage:
         st.subheader("Pitch usage")
-        st.info("Pitch type distributions will appear here.")
+        if arsenal is None:
+            st.info("Load Statcast records to view pitch usage.")
+        else:
+            st.caption(
+                f"Unclassified pitches: {arsenal.unclassified_pitch_count:,} (excluded). "
+                "Usage = pitch-type count / all classified pitches × 100. "
+                "Uses all loaded rows, independently of the movement/location filter. "
+                "Displayed percentages round to one decimal and may not total exactly 100%."
+            )
+            if data.empty:
+                st.info("No pitch records available for pitch usage.")
+            elif arsenal.metrics.empty:
+                st.info("No classified pitches available for pitch usage.")
+            else:
+                st.plotly_chart(
+                    pitch_usage_chart(arsenal.metrics), width="stretch", key="pitch_usage",
+                    alt="Pitch counts and classified usage percentages, highest usage first",
+                )
 
 
 if __name__ == "__main__":

@@ -191,23 +191,23 @@ def test_movement_filter_reset_and_independent_charts(monkeypatch):
                          'pfx_z': [2, None], 'plate_x': [None, -1], 'plate_z': [None, 2]})
     app, fetch = _request_app(monkeypatch, data)
     assert app.multiselect[0].value == ['FF', 'SL']
-    assert len(app.get('plotly_chart')) == 2
+    assert len(app.get('plotly_chart')) == 3
     app.multiselect[0].set_value(['SL']).run()
     assert not app.exception
     assert fetch.call_count == 1
     assert app.dataframe[-1].value.pitch_type.tolist() == ['SL']
     assert app.dataframe[-1].value.valid_paired.tolist() == [0]
-    assert len(app.get('plotly_chart')) == 1
+    assert len(app.get('plotly_chart')) == 2
     spec = json.loads(app.get('plotly_chart')[0].proto.spec)
     assert spec['data'][0]['x'] == [-1]
     app.multiselect[0].set_value(['FF']).run()
     assert not app.exception
-    assert len(app.get('plotly_chart')) == 1
+    assert len(app.get('plotly_chart')) == 2
     spec = json.loads(app.get('plotly_chart')[0].proto.spec)
     assert spec['data'][0]['x'] == [12]
     app.multiselect[0].set_value([]).run()
     assert not app.exception
-    assert not app.get('plotly_chart')
+    assert len(app.get('plotly_chart')) == 1  # Usage retains the full loaded arsenal.
     assert any('Select at least one' in i.value for i in app.info)
     fetch.return_value = data.iloc[[0]]
     app.sidebar.text_input[0].set_value('456')
@@ -223,3 +223,49 @@ def test_movement_filter_reset_and_independent_charts(monkeypatch):
     assert not app.exception
     assert not app.multiselect and not app.get('plotly_chart')
     assert not app.dataframe
+
+
+def test_usage_full_dataset_reruns_and_failure(monkeypatch):
+    import json
+    import pandas as pd
+    from statcast_validation import StatcastError
+
+    data = pd.DataFrame({'pitch_type': ['FF'] * 100 + ['SL'] * 25 + [None] * 5})
+    app, fetch = _request_app(monkeypatch, data)
+    def usage_spec():
+        return json.loads(app.get('plotly_chart')[-1].proto.spec)
+    spec = usage_spec()
+    assert spec['data'][0]['y'] == ['FF', 'SL']
+    assert spec['data'][0]['x'] == [80, 20]
+    assert spec['data'][0]['customdata'] == [[100], [25]]
+    assert any('Unclassified pitches: 5 (excluded)' in c.value for c in app.caption)
+    app.multiselect[0].set_value([]).run()
+    assert not app.exception
+    assert usage_spec() == spec
+    assert fetch.call_count == 1
+    fetch.return_value = pd.DataFrame({'pitch_type': ['SL']})
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert usage_spec()['data'][0]['x'] == [100]
+    fetch.side_effect = StatcastError('Request failed')
+    app.sidebar.button[0].click().run()
+    assert not app.exception
+    assert not app.get('plotly_chart')
+    assert any('Load Statcast records' in i.value for i in app.info)
+    assert fetch.call_count == 3
+
+
+def test_usage_empty_and_unclassified_messages(monkeypatch):
+    import pandas as pd
+
+    for data, message in [
+        (pd.DataFrame(), 'No pitch records available for pitch usage.'),
+        (pd.DataFrame({'pitch_type': [None, ' ']}),
+         'No classified pitches available for pitch usage.'),
+    ]:
+        app, fetch = _request_app(monkeypatch, data)
+        assert any(i.value == message for i in app.info)
+        assert not app.get('plotly_chart')
+        app.run()
+        assert not app.exception
+        assert fetch.call_count == 1

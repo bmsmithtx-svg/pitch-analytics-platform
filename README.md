@@ -3,12 +3,42 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 1.4 — Pitch movement & location analysis
+## Current milestone: 1.5 — Pitch usage visualization
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
-filtering. Performance metrics and pitch usage charts remain future work.
+filtering. Milestone 1.5 adds the interactive pitch usage chart. Performance
+metrics remain future work.
 No player records or measurements are fabricated.
+
+## Milestone 1.5 pitch usage visualization
+
+After loading records, **Pitch visualizations → Pitch usage** shows an interactive
+Plotly horizontal bar chart, sorted by descending usage with pitch code ascending
+for ties. Each bar displays the source pitch type, count, and percentage; hover
+shows all three. Plotly provides zoom, pan, reset, and image export. Automatic
+label margins and a height that grows with the number of types keep longer names
+readable. Colors are assigned consistently by sorted classified pitch type
+within the loaded usage summary.
+
+The chart reuses the same `aggregate_pitch_arsenal` result as the arsenal table:
+`usage_pct = 100 × pitch_count / total classified pitch rows`. Counts include
+all loaded rows, beyond the 100-row preview, regardless of measurement availability.
+Nonblank string classifications are whitespace-stripped and case-preserved;
+no names are inferred, substituted, or mapped to a fixed whitelist. Unclassified
+rows are reported separately beside the chart and excluded from its denominator.
+No additional retrieval, deduplication, or game-type filtering occurs. The
+movement/location selector does not filter usage or change its denominator.
+
+Underlying percentages remain unrounded and sum to approximately 100%; labels
+and hover round to one decimal, so displayed percentages may not total exactly
+100%. Empty and entirely unclassified datasets show distinct messages without
+division by zero. Missing or malformed measurements do not reduce usage counts;
+upstream retrieval validation remains unchanged. Source: loaded Baseball Savant
+Statcast rows via pybaseball. Usage describes only the requested dataset and its
+source classifications, whose accuracy and coverage are not assessed. Small
+samples do not establish stable tendencies or pitch effectiveness. Very long
+source labels or narrow screens can require more display space.
 
 ## Milestone 1.4 methodology and usage
 
@@ -183,7 +213,7 @@ Stop the server with Control-C. Run `deactivate` to leave the virtual environmen
 ## Validation
 
 ```sh
-python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py pitch_movement.py pitch_plots.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py tests/test_pitch_movement.py
+python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py pitch_movement.py pitch_plots.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py tests/test_pitch_movement.py tests/test_pitch_usage.py
 python -m pytest -q
 python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
 git diff --check
@@ -210,6 +240,7 @@ GitHub Actions runs the same offline suite on Python 3.12.
 - `AGENTS.md`: Architecture, statistical documentation, security, and review standards.
 
 - `pitch_movement.py`: Pure coordinate preparation, filtering, movement summary and zone reference.
-- `pitch_plots.py`: Plotly movement and equal-scale location figures.
+- `pitch_plots.py`: Plotly usage, movement and equal-scale location figures.
 - `tests/test_pitch_movement.py`: Synthetic calculation, validity and chart-geometry coverage.
+- `tests/test_pitch_usage.py`: Offline usage counts, ordering, empty states and label coverage.
 See `AGENTS.md` before contributing.
