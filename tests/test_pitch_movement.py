@@ -6,7 +6,7 @@ import pytest
 
 from pitch_movement import (prepare_pitch_coordinates, movement_summary,
                             filter_pitch_types, valid_locations, strike_zone_reference)
-from pitch_plots import movement_chart, location_chart, pitch_colors
+from pitch_plots import movement_chart, location_chart, pitch_colors, pitch_symbols
 
 
 def test_independent_and_paired_denominators():
@@ -128,3 +128,62 @@ def test_colors_and_large_location_sample():
     assert sum(len(trace.x) for trace in full.data) == 2000
     assert filtered.data[0].marker.color == full.data[1].marker.color
     assert len(filtered.data[0].x) == 1000
+
+
+def test_unequal_groups_have_independent_means_and_paired_centroids():
+    # FF inches: x=[12, 24, 36], z=[6, 18, 30, 42]; pairs=(12,6),(36,18).
+    # SL inches: x=[-24, -12, 0], z=[-6, 6]; pair=(-24,-6).
+    raw = pd.DataFrame({
+        'pitch_type': ['FF'] * 5 + ['SL'] * 4,
+        'pfx_x': [1, 2, 3, None, None, -2, -1, 0, None],
+        'pfx_z': [.5, None, 1.5, 2.5, 3.5, -.5, None, None, .5],
+    })
+    rows = prepare_pitch_coordinates(raw)
+    summary = movement_summary(rows).set_index('pitch_type')
+    expected = {
+        'FF': [24, 24, 3, 4, 2, 24, 12],
+        'SL': [-12, 0, 3, 2, 1, -24, -6],
+    }
+    for code, values in expected.items():
+        assert summary.loc[code].tolist() == values
+        alone = movement_summary(filter_pitch_types(rows, [code])).set_index('pitch_type')
+        pd.testing.assert_series_equal(summary.loc[code], alone.loc[code])
+    changed = rows.copy()
+    changed.loc[changed.pitch_type == 'SL', ['pfx_x', 'pfx_z']] = 999
+    pd.testing.assert_series_equal(
+        summary.loc['FF'], movement_summary(changed).set_index('pitch_type').loc['FF'])
+    fig = movement_chart(summary.reset_index(), pitch_colors(['FF', 'SL']))
+    assert [(t.name, list(t.x), list(t.y), list(t.customdata)) for t in fig.data] == [
+        ('FF', [24], [12], [2]), ('SL', [-24], [-6], [1])]
+
+
+def test_repeated_colors_have_distinct_stable_symbols_in_both_charts():
+    types = [f'P{i:02}' for i in range(23)]
+    colors = pitch_colors(types)
+    symbols = pitch_symbols(colors)
+    assert colors == pitch_colors(list(reversed(types)))
+    assert symbols == pitch_symbols(dict(reversed(list(colors.items()))))
+    assert colors['P00'] == colors['P11'] == colors['P22']
+    assert [symbols[c] for c in ['P00', 'P11', 'P22']] == ['circle', 'square', 'diamond']
+    assert len({(colors[c], symbols[c]) for c in types}) == len(types)
+    rows = prepare_pitch_coordinates(pd.DataFrame({
+        'pitch_type': types, 'pfx_x': range(23), 'pfx_z': [1] * 23,
+        'plate_x': [0] * 23, 'plate_z': [2] * 23,
+    }))
+    for chart in (
+        lambda r: movement_chart(movement_summary(r), colors),
+        lambda r: location_chart(valid_locations(r), strike_zone_reference(r), colors),
+    ):
+        full = chart(rows)
+        assert len({t.name for t in full.data}) == 23
+        assert len({(t.marker.color, t.marker.symbol) for t in full.data}) == 23
+        for index in [0, 11, 22]:
+            filtered = chart(filter_pitch_types(rows, [types[index]]))
+            before, after = full.data[index], filtered.data[0]
+            assert after.name == before.name
+            assert after.marker.color == before.marker.color
+            assert after.marker.symbol == before.marker.symbol
+            assert list(after.x) == list(before.x)
+            assert list(after.y) == list(before.y)
+            assert filtered.layout.yaxis.scaleanchor == 'x'
+            assert filtered.layout.yaxis.scaleratio == 1

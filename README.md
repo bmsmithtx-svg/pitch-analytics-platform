@@ -44,6 +44,18 @@ overplotting and counts in the legend. Equal physical axis scaling preserves
 geometry. Movement and location availability are independent; either chart can
 remain usable when the other has no observations.
 
+Per the [official Baseball Savant CSV documentation](https://baseballsavant.mlb.com/csv-docs),
+through 2025, `plate_x` and `plate_z` represent front-of-plate locations;
+beginning in 2026, they represent middle-of-plate locations aligned with ABS.
+Through 2025, `sz_top` and `sz_bot` use operator-defined strike-zone boundaries;
+beginning in 2026, they use ABS-defined boundaries. Historical comparisons
+spanning this transition require caution. PitcherIQ preserves source measurements
+without artificially adjusting historical coordinates or boundaries.
+
+Colors and marker symbols are assigned from the full loaded arsenal and remain
+stable when filtering. When the 11-color palette repeats, marker symbols change
+to distinguish pitch types; legends retain pitch-type names.
+
 The dashed representative zone spans the physical 17-inch plate width,
 `-17/24` to `+17/24` feet, with no baseball-radius expansion. Its bottom/top are
 the respective medians from rows with finite same-row boundaries satisfying
@@ -171,7 +183,7 @@ Stop the server with Control-C. Run `deactivate` to leave the virtual environmen
 ## Validation
 
 ```sh
-python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py
+python -m py_compile app.py statcast_service.py statcast_validation.py pitch_arsenal.py pitch_movement.py pitch_plots.py tests/test_app.py tests/test_statcast.py tests/test_pitch_arsenal.py tests/test_pitch_movement.py
 python -m pytest -q
 python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
 git diff --check
