@@ -32,8 +32,9 @@ def test_request_preview_and_failure_clear_previous_result(monkeypatch) -> None:
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
     fetch.assert_not_called()
-    app.sidebar.text_input[0].set_value("123")
-    app.sidebar.button[0].click().run()
+    app.sidebar.radio(key="selection_source").set_value("Manual ID").run()
+    app.sidebar.text_input(key="pitcher_id").set_value("123")
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert app.metric[0].value == "1"
     assert len(app.dataframe[0].value) == 1
@@ -42,7 +43,7 @@ def test_request_preview_and_failure_clear_previous_result(monkeypatch) -> None:
     assert len(app.dataframe) == 2
     assert app.dataframe[1].value["valid_paired"].eq(0).all()
     fetch.side_effect = StatcastError("Unable to retrieve data")
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert app.error[0].value == "Unable to retrieve data"
     assert len(app.dataframe) == 0
@@ -56,8 +57,9 @@ def _request_app(monkeypatch, data):
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
     fetch.assert_not_called()
-    app.sidebar.text_input[0].set_value("123")
-    app.sidebar.button[0].click().run()
+    app.sidebar.radio(key="selection_source").set_value("Manual ID").run()
+    app.sidebar.text_input(key="pitcher_id").set_value("123")
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert fetch.call_count == 1
     return app, fetch
@@ -103,7 +105,7 @@ def test_arsenal_success_formats_and_repeat_use(monkeypatch):
     assert len(app.dataframe) == 3
     assert "valid_paired" in app.dataframe[-1].value.columns
     fetch.return_value = data.iloc[[1]].copy()
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert fetch.call_count == 2
     assert app.dataframe[1].value["pitch_type"].tolist() == ["SL"]
@@ -148,7 +150,7 @@ def test_arsenal_cleared_for_all_retrieval_failures(monkeypatch):
         assert len(app.dataframe) == 3
         assert "valid_paired" in app.dataframe[-1].value.columns
         fetch.side_effect = error("Request failed")
-        app.sidebar.button[0].click().run()
+        app.sidebar.button(key="request_data").click().run()
         assert not app.exception
         assert fetch.call_count == 2
         assert len(app.dataframe) == 0
@@ -160,7 +162,7 @@ def test_arsenal_cleared_for_all_retrieval_failures(monkeypatch):
         assert len(app.dataframe) == 0
         assert fetch.call_count == 2
         fetch.side_effect = None
-        app.sidebar.button[0].click().run()
+        app.sidebar.button(key="request_data").click().run()
         assert not app.exception
         assert len(app.dataframe) == 3
         assert "valid_paired" in app.dataframe[-1].value.columns
@@ -210,17 +212,17 @@ def test_movement_filter_reset_and_independent_charts(monkeypatch):
     assert len(app.get('plotly_chart')) == 1  # Usage retains the full loaded arsenal.
     assert any('Select at least one' in i.value for i in app.info)
     fetch.return_value = data.iloc[[0]]
-    app.sidebar.text_input[0].set_value('456')
+    app.sidebar.text_input(key="pitcher_id").set_value('456')
     from datetime import date
     app.sidebar.date_input[0].set_value(date(2026, 1, 1))
     app.sidebar.date_input[1].set_value(date(2026, 1, 30))
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert app.multiselect[0].options == ['FF']
     assert app.multiselect[0].value == ['FF']
     assert fetch.call_count == 2
     fetch.side_effect = StatcastError('Request failed')
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert not app.multiselect and not app.get('plotly_chart')
     assert not app.dataframe
@@ -245,11 +247,11 @@ def test_usage_full_dataset_reruns_and_failure(monkeypatch):
     assert usage_spec() == spec
     assert fetch.call_count == 1
     fetch.return_value = pd.DataFrame({'pitch_type': ['SL']})
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert usage_spec()['data'][0]['x'] == [100]
     fetch.side_effect = StatcastError('Request failed')
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert not app.get('plotly_chart')
     assert any('Load Statcast records' in i.value for i in app.info)
@@ -283,16 +285,16 @@ def test_scouting_report_tracks_submitted_identity_dates_and_clears(monkeypatch)
     timestamp = app.session_state["report_generated_at"]
     app.run()
     assert app.session_state["report_generated_at"] == timestamp
-    app.sidebar.text_input[0].set_value("456")
+    app.sidebar.text_input(key="pitcher_id").set_value("456")
     app.sidebar.date_input[0].set_value(date(2025, 4, 1))
     app.sidebar.date_input[1].set_value(date(2025, 4, 3))
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert any("MLBAM 456" in text.value for text in app.text)
     assert any("2025-04-01 through 2025-04-03" in text.value for text in app.text)
     assert not any("MLBAM 123" in text.value for text in app.text)
     fetch.side_effect = StatcastError("Retrieval failed")
-    app.sidebar.button[0].click().run()
+    app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert not app.get("download_button")
     assert not app.table

@@ -3,7 +3,7 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 1.6 — Automated pitcher scouting reports
+## Current milestone: 2.1 — Pitcher search by name
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
@@ -11,12 +11,52 @@ filtering. Milestone 1.5 adds the interactive pitch usage chart. Performance
 metrics beyond descriptive swing/miss indicators remain future work.
 No player records or measurements are fabricated.
 
+## Pitcher search by name
+
+Choose **Name search**, enter a name, and click **Search**. A single exact full-name
+match (ignoring case and normalized whitespace) resolves its MLB ID automatically.
+Duplicate full names and all partial matches require an explicit choice from
+**Matching players**, even if there is only one partial result. Labels show only
+available team, position, activity and birth-date metadata, ending with MLB ID.
+Historical, inactive and two-way players are included; results are people, not a
+verified list of pitchers. Select the intended identity before requesting data.
+
+Names accept Unicode letters, accents, spaces, apostrophes, periods and hyphens;
+use 2–100 characters. After selection, choose dates and click **Request data**.
+Search and selection never download Statcast data. Changing the query, selection
+mode or effective pitcher clears prior analytics and reports to prevent stale
+identity displays. Date edits retain the loaded report until the next request.
+
+For the independent fallback, choose **Manual ID**, expand
+**Advanced: Enter MLB Player ID manually**, and enter the numeric ID. This works
+without a successful search. If MLB search is unavailable, retry, wait after a
+rate-limit message, or use manual entry. No API key is needed. A resolved name ID
+uses the same validated retrieval path as manual entry: analytics definitions,
+charts, scouting rules, HTML export and the inclusive 30-day limit are unchanged.
+
+Lookup source: MLB Stats API `https://statsapi.mlb.com/api/v1/people/search`, using
+encoded `names` query parameters. An isolated live check on 2026-11-18 returned
+HTTP 200 and a `people` array including integer `id`, `fullName`, `birthDate`,
+`active`, and `primaryPosition.name` (verified with a two-way player). Team metadata
+is optional and not guaranteed. No active-only or primary-position filter is used.
+Malformed records fail the entire lookup rather than silently hiding candidates.
+Repeated IDs retain one deterministic whole record, preferring more metadata;
+distinct IDs with the same name remain separate choices.
+
+Successful searches (including empty results) use a shared one-hour cache bounded
+to 64 normalized names. Network/HTTP failures, rate limits, invalid JSON and invalid
+records are never cached. Each lookup makes at most one request with 5-second
+connection and 15-second read timeouts; retries are explicit. Lookup metadata may
+be stale for up to an hour and does not guarantee Statcast coverage. Automated
+lookup and selection tests use deterministic identity fixtures and mocked HTTP.
+
 ## Milestone 1.6 scouting reports
 
 Submit **Request data**, then scroll to **Pitcher scouting report**. The report
 uses the loaded pitcher and inclusive dates, and all retrieved rows independently
-of the movement/location filter. Editing the form does not change the loaded
-report until submission. Every submission clears old results, including failures.
+of the movement/location filter. Editing dates does not change the loaded
+report until submission; changing pitcher identity clears it immediately. Every
+submission clears old results, including failures.
 Choose **Download scouting report (HTML)** for a self-contained, escaped,
 print-friendly report (browser Print → landscape). Its UTC generation timestamp
 is fixed at successful retrieval and stays separate from deterministic analytics.
@@ -287,8 +327,11 @@ GitHub Actions runs the same offline suite on Python 3.12.
 
 ## Project files
 
-- `app.py`: Streamlit dashboard entry point.
-- `requirements.txt`: Six direct runtime and test dependencies.
+- `app.py`: Streamlit dashboard entry point and bounded identity-search cache.
+- `pitcher_search.py`: Independent MLB identity validation, lookup, parsing and resolution.
+- `tests/test_pitcher_search.py`: Offline query, response, resolution, HTTP and cache coverage.
+- `tests/test_pitcher_selection.py`: Offline identity workflow and stale-selection coverage.
+- `requirements.txt`: Pinned direct runtime and test dependencies (including requests for MLB identity lookup).
 - `statcast_service.py`: Pitcher API access and successful-result caching.
 - `statcast_validation.py`: Request and response validation contracts.
 - `pitch_arsenal.py`: Pure per-pitch-type scouting metrics and unclassified count.

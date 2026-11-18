@@ -14,7 +14,11 @@ from pitch_arsenal import PitchArsenalResult, aggregate_pitch_arsenal
 from scouting_report import build_scouting_report, METHODS, SOURCE
 from report_export import export_report_html, report_table
 from statcast_service import get_pitcher_statcast
-from statcast_validation import NoStatcastDataError, StatcastError
+from statcast_validation import NoStatcastDataError, StatcastError, validate_request
+from pitcher_search import (
+    PlayerCandidate, PitcherSearchError, fetch_candidates, normalize_query, resolve_candidate,
+    validate_player_id,
+)
 
 
 def render_pitch_arsenal(result: PitchArsenalResult) -> None:
@@ -139,6 +143,100 @@ def render_scouting_report(
                        mime="text/html", key="scouting_download")
 
 
+@st.cache_data(ttl=3600, max_entries=64, show_spinner=False)
+def cached_player_search(query: str) -> tuple[PlayerCandidate, ...]:
+    """Cache validated successful MLB searches for an hour, at most 64 names.
+
+    Exceptions are not cached. Empty people lists are valid successful results.
+    Query keys are normalized and casefolded before entering this cache.
+    """
+    return fetch_candidates(query)
+
+
+def clear_loaded_analysis() -> None:
+    """Drop results and reports when identity changes or a request fails."""
+    for key in ("analysis_pitch_types", "statcast_result", "report_generated_at", "statcast_message"):
+        st.session_state.pop(key, None)
+
+
+def clear_search_selection() -> None:
+    for key in ("search_results_query", "search_candidates", "selected_candidate", "search_message"):
+        st.session_state.pop(key, None)
+    st.session_state.pop("candidate_id", None)
+    st.session_state["resolved_player_id"] = None
+    clear_loaded_analysis()
+
+
+def change_selection_mode() -> None:
+    clear_search_selection()
+    st.session_state["pitcher_id"] = ""
+
+
+def render_pitcher_selection() -> str:
+    """Keep typed query, result query, selection and effective identity separate."""
+    st.session_state.setdefault("resolved_player_id", None)
+    mode = st.radio("Select pitcher by", ["Name search", "Manual ID"],
+                    key="selection_source", on_change=change_selection_mode)
+    selected = None
+    pitcher_id = ""
+    if mode == "Name search":
+        query = st.text_input("Pitcher name", key="pitcher_query", on_change=clear_search_selection)
+        if st.button("Search", key="search_players"):
+            clear_search_selection()
+            try:
+                normalized = normalize_query(query)
+                candidates = cached_player_search(normalized.casefold())
+                st.session_state["search_results_query"] = normalized
+                st.session_state["search_candidates"] = candidates
+            except PitcherSearchError as exc:
+                st.session_state["search_message"] = str(exc)
+        if st.session_state.get("search_message"):
+            st.error(st.session_state["search_message"])
+        candidates = st.session_state.get("search_candidates", ())
+        results_query = st.session_state.get("search_results_query")
+        # Independently guard the provenance even if a widget callback was skipped.
+        if results_query is not None:
+            try:
+                current = normalize_query(query)
+            except PitcherSearchError:
+                current = None
+            if current != results_query:
+                clear_search_selection()
+                candidates = ()
+            elif not candidates:
+                st.info("No matching players. Try a fuller name or enter an ID manually.")
+            else:
+                selected = resolve_candidate(results_query, candidates)
+                if selected is None:
+                    st.caption("Select the intended player. Historical and two-way players are included.")
+                    by_id = {c.player_id: c for c in candidates}
+                    candidate_id = st.selectbox("Matching players", list(by_id), index=None,
+                                                format_func=lambda value: by_id[value].label(),
+                                                key="candidate_id")
+                    selected = by_id.get(candidate_id)
+                if selected is not None:
+                    pitcher_id = str(validate_player_id(selected.player_id))
+                    st.text(selected.label())
+    with st.expander("Advanced: Enter MLB Player ID manually"):
+        st.caption("Choose Manual ID above to use this fallback, including when search is unavailable.")
+        manual_id = st.text_input("MLBAM pitcher ID", key="pitcher_id", disabled=mode != "Manual ID")
+    if mode == "Manual ID":
+        pitcher_id = manual_id
+    st.session_state["selected_candidate"] = selected
+    try:
+        valid_id, _, _ = validate_request(pitcher_id, date.today(), date.today())
+    except StatcastError:
+        valid_id = None
+    st.session_state["resolved_player_id"] = valid_id
+    identity = (mode, valid_id)
+    if st.session_state.get("effective_identity") != identity:
+        clear_loaded_analysis()
+    st.session_state["effective_identity"] = identity
+    if valid_id is not None:
+        st.text(f"Selected via {mode.lower()}: MLB ID {valid_id}")
+    return pitcher_id
+
+
 def main() -> None:
     """Render the dashboard and retrieve data only after explicit submission."""
     st.set_page_config(
@@ -149,11 +247,11 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Pitcher selection")
+        pitcher_id = render_pitcher_selection()
         with st.form("statcast_request"):
-            pitcher_id = st.text_input("MLBAM pitcher ID", key="pitcher_id")
             start_date = st.date_input("Start date", value=date.today() - timedelta(days=29))
             end_date = st.date_input("End date", value=date.today())
-            submitted = st.form_submit_button("Request data")
+            submitted = st.form_submit_button("Request data", key="request_data")
         st.caption("Maximum 30 days, including both endpoints. Data loads only on request.")
 
     st.title("Pitch Analytics Platform")
@@ -165,11 +263,9 @@ def main() -> None:
     arsenal = None
     if submitted:
         # Clear the previous result so a failed request cannot show stale rows.
-        st.session_state.pop("analysis_pitch_types", None)
-        st.session_state.pop("statcast_result", None)
-        st.session_state.pop("report_generated_at", None)
-        st.session_state.pop("statcast_message", None)
+        clear_loaded_analysis()
         try:
+            validate_request(pitcher_id, start_date, end_date)
             with st.spinner("Retrieving Statcast data…"):
                 data = get_pitcher_statcast(pitcher_id, start_date, end_date)
             st.session_state["statcast_result"] = (pitcher_id.strip(), start_date, end_date, data)
