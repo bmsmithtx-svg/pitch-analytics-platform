@@ -39,6 +39,8 @@ def select_and_generate(app):
     assert not app.exception
     app.button(key="request_data").click().run()
     assert not app.exception
+    app.button(key="generate_report").click().run()
+    assert not app.exception
 
 
 def navigate(app, section):
@@ -65,7 +67,7 @@ def test_empty_sections_do_not_retrieve(dashboard, section):
 def test_selection_results_filter_and_report_survive_navigation(dashboard, section):
     app, lookup, fetch = dashboard
     select_and_generate(app)
-    timestamp = app.session_state["report_generated_at"]
+    timestamp = app.session_state["scouting_report"][1]
     loaded = app.session_state["statcast_result"]
     report_table = app.table[0].value.copy(deep=True)
     app.multiselect(key="analysis_pitch_types").set_value(["SL"]).run()
@@ -77,7 +79,7 @@ def test_selection_results_filter_and_report_survive_navigation(dashboard, secti
     assert app.session_state["statcast_result"][:3] == loaded[:3]
     pd.testing.assert_frame_equal(app.session_state["statcast_result"][3], loaded[3])
     pd.testing.assert_frame_equal(app.table[0].value, report_table)
-    assert app.session_state["report_generated_at"] == timestamp
+    assert app.session_state["scouting_report"][1] == timestamp
     assert app.get("download_button")
     assert any("Active pitcher: Example Pitcher" in text.value for text in app.text)
     app.run()
@@ -93,7 +95,7 @@ def test_date_edits_clear_all_results_before_submission(dashboard, key):
     app.date_input(key=key).set_value(previous - pd.Timedelta(days=1)).run()
     assert not app.exception
     assert app.session_state["resolved_player_id"] == 123
-    for state_key in ["statcast_result", "report_generated_at", "analysis_pitch_types"]:
+    for state_key in ["statcast_result", "scouting_report", "analysis_pitch_types"]:
         assert state_key not in app.session_state
     assert not app.metric and not app.table and not app.get("download_button")
     for section in SECTIONS:
@@ -127,13 +129,15 @@ def test_failed_requests_stay_empty_through_navigation_and_can_retry(dashboard, 
         navigate(app, section)
         assert not app.metric and not app.dataframe and not app.table
         assert not app.get("download_button")
-        assert "report_generated_at" not in app.session_state
+        assert "scouting_report" not in app.session_state
         assert any(str(error) == alert.value for alert in [*app.info, *app.error])
     assert fetch.call_count == 2
     fetch.side_effect = None
     app.button(key="request_data").click().run()
     assert not app.exception
-    assert app.success and app.get("download_button")
+    assert app.success and not app.get("download_button")
+    app.button(key="generate_report").click().run()
+    assert app.get("download_button")
     assert fetch.call_count == 3
 
 
@@ -167,6 +171,6 @@ def test_provenance_guard_clears_restored_mismatched_results(dashboard, loaded_i
     app.run()
     assert not app.exception
     assert "statcast_result" not in app.session_state
-    assert "report_generated_at" not in app.session_state
+    assert "scouting_report" not in app.session_state
     assert not app.metric and not app.get("download_button")
     assert fetch.call_count == 1

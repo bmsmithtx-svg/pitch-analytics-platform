@@ -49,7 +49,9 @@ def test_name_resolution_explicit_retrieval_and_rerun(dashboard):
     assert lookup.call_count == 1
     request(app)
     fetch.assert_called_once_with("123", date.today() - pd.Timedelta(days=29), date.today())
-    assert app.metric and app.get("download_button")
+    assert app.metric and not app.get("download_button")
+    app.button(key="generate_report").click().run()
+    assert app.get("download_button")
     app.run()
     assert lookup.call_count == fetch.call_count == 1
 
@@ -175,6 +177,7 @@ def test_changing_or_clearing_candidate_drops_old_report(dashboard):
     search(app)
     app.selectbox(key="candidate_id").select(123).run()
     request(app)
+    app.button(key="generate_report").click().run()
     assert app.get("download_button")
     app.selectbox(key="candidate_id").select(456).run()
     assert app.session_state["resolved_player_id"] == 456

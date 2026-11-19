@@ -1,6 +1,8 @@
 """Self-contained, escaped HTML export; formatting has no analytical side effects."""
 from datetime import datetime
 from html import escape
+import re
+import unicodedata
 
 import pandas as pd
 
@@ -57,3 +59,12 @@ th{{text-align:left}}@media print{{body{{margin:0}}thead{{display:table-header-g
 {items(report.observations)}<h2>Sample size and data quality</h2>{items(report.notes)}
 <h2>Definitions and interpretation</h2><p>{escape(METHODS)}</p>
 <p>Source: {escape(SOURCE)}</p></body></html>'''
+
+
+def report_filename(report: ScoutingReport) -> str:
+    """Bounded ASCII filename; source name is optional, ID/dates identify request."""
+    name = unicodedata.normalize("NFKD", report.pitcher_name or "").encode(
+        "ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:64].rstrip("-")
+    identity = f"{slug}-{report.pitcher_id}" if slug else str(report.pitcher_id)
+    return f"scouting-report-{identity}-{report.start_date}-{report.end_date}.html"

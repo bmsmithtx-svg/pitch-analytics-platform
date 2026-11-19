@@ -63,6 +63,9 @@ def _request_app(monkeypatch, data):
     app.sidebar.button(key="request_data").click().run()
     assert not app.exception
     assert fetch.call_count == 1
+    if not data.empty:
+        app.button(key="generate_report").click().run()
+        assert not app.exception
     return app, fetch
 
 
@@ -135,7 +138,11 @@ def test_arsenal_empty_and_unclassified(monkeypatch):
     for data, count in [(pd.DataFrame({"pitch_type": []}), 0),
                         (pd.DataFrame({"pitch_type": [None, "", " "]}), 3)]:
         app, _ = _request_app(monkeypatch, data)
-        assert len(app.dataframe) == (1 if data.empty else 2)  # Include unclassified movement coverage.
+        if data.empty:
+            assert not app.metric and not app.dataframe
+            assert any("No records found" in info.value for info in app.info)
+            continue
+        assert len(app.dataframe) == 2  # Include unclassified movement coverage.
         assert app.metric[1].value == str(count)
         assert any("No classified pitches" in info.value for info in app.info)
 
@@ -263,7 +270,7 @@ def test_usage_empty_and_unclassified_messages(monkeypatch):
     import pandas as pd
 
     for data, message in [
-        (pd.DataFrame(), 'No pitch records available for pitch usage.'),
+        (pd.DataFrame(), 'No records found. Choose another pitcher or date range.'),
         (pd.DataFrame({'pitch_type': [None, ' ']}),
          'No classified pitches available for pitch usage.'),
     ]:
@@ -283,14 +290,16 @@ def test_scouting_report_tracks_submitted_identity_dates_and_clears(monkeypatch)
     app, fetch = _request_app(monkeypatch, pd.DataFrame({"pitch_type": ["FF"], "release_speed": [95]}))
     assert any("MLBAM 123" in text.value for text in app.text)
     assert len(app.get("download_button")) == 1
-    timestamp = app.session_state["report_generated_at"]
+    timestamp = app.session_state["scouting_report"][1]
     app.run()
-    assert app.session_state["report_generated_at"] == timestamp
+    assert app.session_state["scouting_report"][1] == timestamp
     app.sidebar.text_input(key="pitcher_id").set_value("456")
     app.sidebar.date_input[0].set_value(date(2025, 4, 1))
     app.sidebar.date_input[1].set_value(date(2025, 4, 3))
     app.sidebar.button(key="request_data").click().run()
     assert not app.exception
+    assert not app.get("download_button")
+    app.button(key="generate_report").click().run()
     assert any("MLBAM 456" in text.value for text in app.text)
     assert any("2025-04-01 through 2025-04-03" in text.value for text in app.text)
     assert not any("MLBAM 123" in text.value for text in app.text)
@@ -299,7 +308,7 @@ def test_scouting_report_tracks_submitted_identity_dates_and_clears(monkeypatch)
     assert not app.exception
     assert not app.get("download_button")
     assert not app.table
-    assert "report_generated_at" not in app.session_state
+    assert "scouting_report" not in app.session_state
     assert not any("MLBAM 456" in text.value for text in app.text)
 
 
@@ -313,7 +322,7 @@ def test_focused_arsenal_views_preserve_values_and_loaded_state(monkeypatch):
                          "pfx_x": [None, 0, 1], "pfx_z": [None, -1, 1]})
     app, fetch = _request_app(monkeypatch, data)
     expected = aggregate_pitch_arsenal(data).metrics
-    timestamp = app.session_state["report_generated_at"]
+    timestamp = app.session_state["scouting_report"][1]
     for view, columns in [
         ("Usage", ["pitch_type", "pitch_count", "usage_pct"]),
         ("Velocity and spin", ["pitch_type", "pitch_count", "avg_release_speed_mph",
@@ -325,7 +334,7 @@ def test_focused_arsenal_views_preserve_values_and_loaded_state(monkeypatch):
         assert not app.exception
         pd.testing.assert_frame_equal(app.dataframe[1].value, expected)
         assert list(app.dataframe[1].proto.column_order) == columns
-        assert app.session_state["report_generated_at"] == timestamp
+        assert app.session_state["scouting_report"][1] == timestamp
         assert len(app.get("download_button")) == 1
     assert fetch.call_count == 1
     assert any("Empty measurement cells mean unavailable" in c.value for c in app.caption)

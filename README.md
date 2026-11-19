@@ -21,7 +21,8 @@ dates appear above four native Streamlit tabs:
    expandable preview of the first 100 rows.
 2. **Pitch Arsenal**: the per-type metric table and unclassified pitch count.
 3. **Visualizations**: movement, locations, pitch-type filtering and pitch usage.
-4. **Scouting Report**: observations, sample/data-quality notes, methodology and
+4. **Scouting Report**: choose **Generate scouting report**, review the preview
+   with observations, sample/data-quality notes and methodology, then choose
    **Download scouting report (HTML)**.
 
 Navigation preserves the pitcher, loaded rows, chart filter, report timestamp
@@ -81,15 +82,29 @@ lookup and selection tests use deterministic identity fixtures and mocked HTTP.
 
 ## Milestone 1.6 scouting reports
 
-Submit **Generate analysis**, then open **Scouting Report**. The report
+Submit **Generate analysis**, then open **Scouting Report** and choose
+**Generate scouting report**. Review the **Report preview**, including identity,
+dates, arsenal, observations and coverage disclosures. The report
 uses the loaded pitcher and inclusive dates, and all retrieved rows independently
 of the movement/location filter. Editing dates or changing pitcher identity
 clears the loaded report immediately. Every submission clears old results,
 including failures.
 Choose **Download scouting report (HTML)** for a self-contained, escaped,
 print-friendly report (browser Print → landscape). Its UTC generation timestamp
-is fixed at successful retrieval and stays separate from deterministic analytics.
-No additional retrieval, AI service or dependency is introduced. Existing charts
+is fixed at successful report generation and stays separate from deterministic analytics.
+The download section appears only after report generation and HTML export succeed.
+Filenames include the available source name, MLBAM ID and inclusive dates, using
+filesystem-safe characters. Generation failures remove the preview/download and
+allow retry from the same valid analysis. New or failed analysis requests, invalid
+inputs, pitcher changes and date edits remove the report and download; generate
+a new analysis and report for the new selection. Tab navigation and chart filters
+preserve the completed report without recalculation.
+
+At least one retrieved row is required. Missing classifications or measurements
+retain the existing limited-data report and coverage warnings; they are never
+filled with zero or used to invent observations. Names appear only when the source
+contains a single unambiguous name; otherwise the report identifies the pitcher
+by MLBAM ID. No additional retrieval, AI service or dependency is introduced. Existing charts
 remain in their dashboard sections; the HTML export contains tables and text.
 
 The report reuses `aggregate_pitch_arsenal` without changing its definitions,
