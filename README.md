@@ -452,3 +452,157 @@ long source labels or large arsenals have not been exhaustively evaluated.
 Dense tables still require internal scrolling, and Plotly tooltips remain
 pointer-oriented; chart names alone are not full text alternatives for every
 individual pitch location.
+
+## Milestone 3.1 — Web Deployment
+
+**Repository implementation is prepared; production application deployment is
+pending.** The launch action intentionally remains unavailable until a verified
+hosted URL is configured. No analytics, report content, or data rules changed.
+
+Architecture: coaching staff → GitHub Pages (`docs/`) → Streamlit Community Cloud
+(`app.py`, Python 3.12) → existing PAP modules → MLB Stats API / Baseball Savant.
+Pages serves static files only; Python runs on Community Cloud. The two sites
+are linked directly, with no iframe, proxy, database, or frontend framework.
+
+### Compatibility and runtime requirements
+
+The 3.1 audit started from clean `main` at `e077144` with annotated tag `v2.5`
+incorporated and 302 offline tests passing on Python 3.12.16. There was no GitHub
+Release entry for that tag. The repository was already public. GitHub Pages was
+already enabled from `main` `/`; use `/docs` for this milestone.
+
+Community Cloud supports Python 3.12 and root `requirements.txt` installation.
+Keep the existing exact dependency pins; no additional runtime dependency or
+OS package was identified. Linux installation is checked by GitHub Actions;
+actual Cloud dependency installation remains a deployment acceptance check.
+No environment variables, secrets, credentials, local datasets, or external
+storage are required for the current public MLB workflows. Do not add a
+`runtime.txt`: select Python **3.12** in the Cloud deployment form.
+
+Outbound HTTPS is required to `statsapi.mlb.com` for name search and
+`baseballsavant.mlb.com` through pybaseball for Statcast. Deployment does not
+prove either endpoint is reachable from the hosting region. MLB search retains
+its connection/read timeouts; Statcast retains upstream-dependent request
+duration without an application timeout. Existing error messages, manual ID
+fallback, inclusive 30-day limit, and validation remain intact.
+
+Session state is per browser session; reloads, disconnects, service restarts, or
+sleep/wake can discard selections and reports. Successful results are cached
+in memory for one hour, bounded to 64 entries per existing cache, shared across
+users. Caches are not persistent storage. Reports and HTML downloads are built
+in memory and downloaded to the coach's device, without writing report files
+on the server. No application feature requires a persistent writable filesystem.
+The pinned dependency stack may use temporary runtime files; do not treat those
+as durable storage. Community Cloud resources are limited and apps may sleep;
+concurrent workloads and upstream delays can affect availability. This is not
+an availability-guaranteed hosting service.
+
+### Deploy the Python application (administrator)
+
+1. Sign in at [Streamlit Community Cloud](https://share.streamlit.io/) using
+   an account authorized for this repository. Complete any GitHub account
+   authorization yourself; do not paste tokens into the repository or site.
+2. In the `bmsmithtx-svg` workspace choose **Create app**, then the existing-app
+   option. Set repository `bmsmithtx-svg/pitch-analytics-platform`, branch `main`,
+   main file path `app.py`. Do this after the milestone PR is merged.
+3. In **Advanced settings**, select Python **3.12**. Leave secrets empty for
+   current functionality. Deploy and watch the build logs for dependency errors.
+4. Open the assigned app URL. Verify name search, player confirmation, Manual ID,
+   an available historical date window of at most 30 days, analysis, all four
+   tabs, chart filters, scouting report preview and HTML download. Confirm
+   changing pitcher/dates invalidates stale analysis. Live retrieval is a
+   deliberate acceptance check, separate from offline tests; a successful page
+   load alone does not validate it.
+5. Copy the actual HTTPS URL only after these checks. No Streamlit deployment
+   URL is assumed in this repository.
+
+Official maintenance references: [deployment and Python selection](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy),
+[dependency installation](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies),
+[sharing and privacy](https://docs.streamlit.io/deploy/streamlit-community-cloud/share-your-app).
+
+### Configure and publish the entry website
+
+1. Edit **only** `globalThis.PAP_APP_URL` in `docs/config.js` to the verified
+   HTTPS app URL, preserving the quotes. Do not use a URL containing credentials,
+   query parameters, or a fragment. This file is public configuration, never a
+   place for secrets. Commit through a reviewed PR to `main`.
+2. In GitHub **Settings → Pages → Build and deployment**, choose **Deploy from a
+   branch**, branch **main**, folder **/docs**, then **Save**. Preserve repository
+   visibility and existing HTTPS/security settings. No Actions write permissions
+   or custom domain are needed. See [GitHub publishing source instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+3. Wait for Pages deployment to finish. The existing Pages URL is
+   <https://bmsmithtx-svg.github.io/pitch-analytics-platform/>. Verify that it
+   displays the PAP entry page and the launch link reaches the verified app.
+4. Share the Pages URL with coaches. They need a browser and internet access,
+   with no Python installation or GitHub use. For a private app, they also need
+   the hosting service's viewer sign-in and an administrator-issued invitation.
+
+An empty, malformed, non-HTTPS, or credential-bearing configuration leaves the
+launch control without an `href` and displays the unavailable message. Script
+load failures also leave it disabled. Without JavaScript, the page explains
+how to obtain the app URL from the administrator. The URL check validates
+format, not remote availability: the administrator must verify the destination.
+No URL may be overridden by a query string or visitor input.
+
+### Security and access
+
+Only `index.html`, `styles.css`, `config.js`, `launch.js`, and `.nojekyll` belong
+in `docs/`. Do not copy Python source, reports, secrets, CSVs, school datasets,
+or local files into that directory. Tests enforce this publishing boundary.
+The Streamlit server does not enable static file serving or the development
+agent API. CORS and XSRF protections retain their defaults. Local
+`.streamlit/secrets.toml` is ignored; confirm with `git check-ignore` before
+creating one. No secrets file is required or provided.
+
+The current repository and Pages site are public. A public repository's
+Community Cloud app is public by default. The landing page is not an access
+control, and hiding a launch URL does not secure an app. Community Cloud can
+restrict an app to specific invited viewers who sign in; its documented limit
+is one private app at a time. Account access and school requirements must
+be assessed before selecting a restricted setup. No visibility, viewer access,
+or security setting should be changed without owner approval. Public MLB data
+is the only data in scope here; Oklahoma Baptist University records are excluded.
+Before later school-data work, independently review repository exposure,
+shared caches, report downloads, hosting authorization, and school policy.
+
+### Updates, troubleshooting, and acceptance
+
+Merge tested application changes into `main`; Community Cloud redeploys the
+connected branch automatically. Dependency changes trigger installation. Use
+its logs to investigate failures and reboot from its management interface if
+needed. Select a supported Python version when deploying; changing it later
+requires redeployment under the provider's current instructions. Pages rebuilds
+from `main` `/docs`; URL changes require editing `docs/config.js` and merging.
+Roll back through a reviewed Git revert rather than rewriting release history.
+
+- **Unavailable launch:** inspect `docs/config.js`, ensure an HTTPS URL without
+  credentials/query/fragment, and check that both scripts load successfully.
+- **Old page or 404:** verify Pages source is `main` `/docs`, the Pages build
+  completed, and refresh the browser cache. Keep `.nojekyll` in the directory.
+- **Cloud build failure:** verify repository/branch/entrypoint, Python 3.12,
+  pinned dependency installation, and logs. Do not silently upgrade packages.
+- **Sleeping or slow app:** wait for startup; inspect Cloud resource usage and
+  logs. Retry an upstream failure or narrow the date window. Manual ID avoids
+  name-search failures, but still requires Statcast availability.
+- **Empty records:** verify pitcher ID, dates, and upstream coverage; missing
+  data does not establish zero pitches. Existing user-facing errors apply.
+- **Lost session/report:** reselect inputs and regenerate after a restart or
+  disconnect. Save downloaded reports locally when needed.
+- **Access denied:** have the owner review the Cloud sharing configuration and
+  viewer invitation; changing the Pages page does not grant app access.
+
+Run the existing Python validation commands above plus `node tests/deployment.cjs`
+(Node 22; built-in modules only). CI runs offline pytest and those JavaScript
+checks. Deployment tests inspect the intended static files, local references,
+unique anchors, disabled initial link, HTTPS destination handling, and server
+configuration. Existing AppTest workflows retain search, retrieval, charts,
+reports, state and invalidation coverage. There is no configured mypy project
+check; an optional checker invocation should report its flags and limitations.
+
+Before announcing production availability, inspect desktop/tablet/mobile layouts,
+keyboard navigation, the configured launch destination, and the full hosted
+workflow above. Also verify an unauthorized viewer is denied if a restricted
+app is chosen. Hosting account setup, actual app URL configuration, live MLB
+connectivity, report download behavior remotely, and coach access remain manual
+acceptance tasks until explicitly recorded as verified. Repository release/tag
+publication alone does not mean the service is deployed.
