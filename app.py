@@ -12,7 +12,7 @@ from pitch_movement import (
 from pitch_plots import movement_chart, location_chart, pitch_colors, pitch_usage_chart
 from pitch_arsenal import PitchArsenalResult, aggregate_pitch_arsenal
 from scouting_report import build_scouting_report, METHODS, SOURCE
-from report_export import export_report_html, report_table
+from report_export import export_report_html, report_table, report_filename
 from statcast_service import get_pitcher_statcast
 from statcast_validation import NoStatcastDataError, StatcastError, validate_request
 from pitcher_search import (
@@ -134,9 +134,41 @@ def render_movement_location(data: pd.DataFrame) -> None:
 def render_scouting_report(
     data: pd.DataFrame, pitcher_id: str, start_date: date, end_date: date
 ) -> None:
-    """Use the active loaded request; report is never stored as separate stale state."""
-    report = build_scouting_report(data, pitcher_id, start_date, end_date)
+    """Generate once from the valid loaded request; share preview/export state."""
     st.header("Pitcher scouting report")
+    st.text(f"MLBAM {pitcher_id} · {start_date} through {end_date} (inclusive)")
+    st.caption("Generate from the completed analysis; no additional data request is needed.")
+    request = validate_request(pitcher_id, start_date, end_date)
+    stored = st.session_state.get("scouting_report")
+    if stored is not None:
+        report, _, _ = stored
+        if (report.pitcher_id, report.start_date, report.end_date) != request:
+            st.session_state.pop("scouting_report", None)
+            stored = None
+    if st.button("Generate scouting report", key="generate_report", type="primary",
+                 disabled=stored is not None):
+        st.session_state.pop("scouting_report", None)
+        st.session_state.pop("report_message", None)
+        try:
+            report = build_scouting_report(data, pitcher_id, start_date, end_date)
+            generated_at = datetime.now(timezone.utc)
+            html = export_report_html(report, generated_at)
+            stored = (report, generated_at, html)
+            st.session_state["scouting_report"] = stored
+        except Exception:
+            # Fail closed without exposing source rows or internal exception details.
+            stored = None
+            st.session_state["report_message"] = (
+                "Unable to generate the report. Retry Generate scouting report. "
+                "If the problem continues, retrieve a new analysis."
+            )
+    if st.session_state.get("report_message"):
+        st.error(st.session_state["report_message"])
+    if stored is None:
+        st.info("Analysis ready. Choose Generate scouting report to preview and download it.")
+        return
+    report, generated_at, html = stored
+    st.subheader("Report preview")
     st.text(f"{report.pitcher_name or 'Name unavailable'} · MLBAM {report.pitcher_id}")
     st.text(f"{report.start_date} through {report.end_date} (inclusive); "
             f"{report.total_pitches:,} pitches analyzed")
@@ -155,12 +187,13 @@ def render_scouting_report(
         st.text(note)
     st.caption(METHODS)
     st.caption(SOURCE)
-    generated_at = st.session_state["report_generated_at"]
     st.caption(f"Report generated: {generated_at.isoformat()}")
-    st.download_button("Download scouting report (HTML)",
-                       export_report_html(report, generated_at),
-                       file_name=f"scouting-report-{report.pitcher_id}-{start_date}-{end_date}.html",
-                       mime="text/html", key="scouting_download")
+    with st.container(border=True):
+        st.subheader("Download report")
+        st.caption("Save the preview as a self-contained HTML file. Open it in a browser to read or print.")
+        st.download_button("Download scouting report (HTML)", html,
+                           file_name=report_filename(report), mime="text/html",
+                           key="scouting_download", on_click="ignore")
 
 
 @st.cache_data(ttl=3600, max_entries=64, show_spinner=False)
@@ -175,7 +208,7 @@ def cached_player_search(query: str) -> tuple[PlayerCandidate, ...]:
 
 def clear_loaded_analysis() -> None:
     """Drop results and reports when identity changes or a request fails."""
-    for key in ("analysis_pitch_types", "statcast_result", "report_generated_at", "statcast_message"):
+    for key in ("analysis_pitch_types", "statcast_result", "scouting_report", "report_message", "statcast_message"):
         st.session_state.pop(key, None)
 
 
@@ -335,8 +368,9 @@ def main() -> None:
             validate_request(pitcher_id, start_date, end_date)
             with st.spinner("Generating analysis: retrieving Statcast data…"):
                 data = get_pitcher_statcast(pitcher_id, start_date, end_date)
+            if data.empty:
+                raise NoStatcastDataError("No records found. Choose another pitcher or date range.")
             st.session_state["statcast_result"] = (pitcher_id.strip(), start_date, end_date, data)
-            st.session_state["report_generated_at"] = datetime.now(timezone.utc)
         except NoStatcastDataError as exc:
             st.session_state["statcast_message"] = ("info", str(exc))
         except StatcastError as exc:
