@@ -16,7 +16,7 @@ def test_dashboard_renders_without_data() -> None:
         "Pitcher selection and analysis",
     ]
     assert [tab.label for tab in app.tabs] == [
-        "Pitcher Selection & Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report",
+        "Pitcher Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report",
     ]
     assert app.sidebar.header[0].value == "Pitcher selection"
     assert app.sidebar.text_input[0].value == ""
@@ -344,3 +344,31 @@ def test_focused_arsenal_views_preserve_values_and_loaded_state(monkeypatch):
     usage_colors = dict(zip(usage["y"], usage["marker"]["color"]))
     movement_colors = {trace["name"]: trace["marker"]["color"] for trace in specs[0]["data"]}
     assert movement_colors["SL"] == usage_colors["SL"]
+
+
+def test_accessible_native_controls_and_scrollable_presentations(monkeypatch):
+    """Inspect public element configuration, independently of frontend markup."""
+    import json
+    import pandas as pd
+
+    app, fetch = _request_app(monkeypatch, pd.DataFrame({
+        "pitch_type": ["FF", "SL"], "pfx_x": [-1., .5], "pfx_z": [1., -.25],
+        "plate_x": [-.4, .5], "plate_z": [2., 3.],
+    }))
+    assert not app.radio(key="arsenal_metrics").proto.horizontal
+    assert app.radio(key="arsenal_metrics").label == "Arsenal metrics"
+    assert [widget.label for widget in app.date_input] == ["Start date", "End date"]
+    assert app.multiselect(key="analysis_pitch_types").label == "Pitch types"
+    for table in app.dataframe:
+        assert table.proto.alt
+    for table in app.dataframe[1:]:
+        assert json.loads(table.proto.columns)["pitch_type"]["pinned"] is True
+    for chart in app.get("plotly_chart"):
+        assert chart.proto.alt
+        spec = json.loads(chart.proto.spec)
+        assert spec["layout"]["autosize"] is True
+        assert "width" not in spec["layout"]
+    assert app.table[0].proto.alt == "Scouting arsenal metrics and valid sample counts"
+    assert any("Scroll the arsenal table" in c.value for c in app.caption)
+    assert any("top-left toggle" in c.value for c in app.caption)
+    assert fetch.call_count == 1

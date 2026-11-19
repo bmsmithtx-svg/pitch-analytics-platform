@@ -3,7 +3,7 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 2.2 — Navigation and workflow
+## Current milestone: 2.5 — Responsive design and accessibility
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
@@ -17,7 +17,7 @@ Use the shared sidebar to select a pitcher and analysis dates, then choose
 **Generate analysis**. The active name (when available), MLB ID and inclusive
 dates appear above four native Streamlit tabs:
 
-1. **Pitcher Selection & Analysis**: workflow guidance, record count and an
+1. **Pitcher Analysis**: workflow guidance, record count and an
    expandable preview of the first 100 rows.
 2. **Pitch Arsenal**: the per-type metric table and unclassified pitch count.
 3. **Visualizations**: movement, locations, pitch-type filtering and pitch usage.
@@ -415,3 +415,40 @@ These are presentation changes only: retrieval, caching, 30-day validation,
 statistical definitions, chart filtering, report generation/HTML export and
 stale-result guards remain unchanged. No new dependency or live-data request is
 introduced by presentation controls.
+
+## Milestone 2.5 responsive design and accessibility
+
+The four native tabs retain their state and use a shorter **Pitcher Analysis**
+label. On narrow screens, open the top-left sidebar toggle for pitcher/date
+controls and scroll the tab strip (or use its arrow controls) for later sections.
+Search, analysis, report generation and download buttons fill their available
+width. Arsenal metric choices stack vertically; pitch-code columns stay pinned
+while the arsenal and movement tables scroll internally. The complete arsenal
+view remains the default, with focused metric views available on smaller screens.
+
+Charts explicitly stretch to their containers, retain 14px base/hover text and
+automatic axis margins, and reserve more space for wrapping legends. Large
+legends scroll within a bounded area. Usage labels keep a 12px minimum; labels
+that cannot fit are hidden rather than shrunk, with exact counts/percentages
+available in tooltips and the arsenal table. Pitch-code labels, legends and the
+existing symbols supplement consistent colors. The report preview uses a
+360px-high native table with sticky headers and internal scrolling; observations,
+notes and downloads remain outside it. Exported HTML is unchanged.
+
+Native labeled widgets, heading structure, accessible chart/table names and
+default keyboard focus styling are preserved. No custom CSS, frontend or new
+dependency is added. Retrieval, caching, calculations, report generation and
+stale-result invalidation are unchanged.
+
+Manual Chrome responsive inspection on 2026-11-19 used synthetic offline UI
+fixtures at 1440px, 768px and 390px widths in the existing dark theme. Navigation,
+context, charts, tables and report previews were readable without observed
+page-wide overflow; mobile sidebar controls and the download button were usable.
+Arrow-key tab navigation and a visible focus indicator were checked. AppTest and
+the running Streamlit agent API cover report persistence and invalidation.
+This is a limited visual review, not a WCAG evaluation: screen-reader operation,
+all keyboard paths, other browsers/themes, physical touch devices and unusually
+long source labels or large arsenals have not been exhaustively evaluated.
+Dense tables still require internal scrolling, and Plotly tooltips remain
+pointer-oriented; chart names alone are not full text alternatives for every
+individual pitch location.
