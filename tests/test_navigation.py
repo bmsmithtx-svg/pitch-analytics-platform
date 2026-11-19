@@ -14,7 +14,7 @@ from streamlit.testing.v1 import AppTest
 from pitcher_search import parse_candidates
 from statcast_validation import NoStatcastDataError, StatcastError
 
-SECTIONS = ["Pitcher Selection & Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report"]
+SECTIONS = ["Pitcher Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report"]
 
 
 @pytest.fixture

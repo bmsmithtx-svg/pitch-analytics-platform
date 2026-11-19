@@ -33,6 +33,7 @@ def pitch_usage_chart(metrics: pd.DataFrame, colors: dict[str, str] | None = Non
             text=[f"{row.pitch_count:,} {'pitch' if row.pitch_count == 1 else 'pitches'} · {row.usage_pct:.1f}%"
                   for row in ordered.itertuples()],
             textposition="auto", cliponaxis=False,
+            textfont=dict(size=14), constraintext="none",
             hovertemplate="Pitch type: %{y}<br>Pitch count: %{customdata[0]:,d}"
                           "<br>Usage: %{x:.1f}%<extra></extra>",
         ))
@@ -114,9 +115,11 @@ def location_chart(locations: pd.DataFrame, zone: StrikeZone,
 def style_chart(fig: go.Figure) -> None:
     """Apply shared presentation only; preserve observations and axis geometry."""
     fig.update_layout(
-        font=dict(size=14), hoverlabel=dict(font_size=14),
-        margin=dict(l=20, r=20, t=30, b=60),
-        legend=dict(orientation="h", yanchor="top", y=-0.2, x=0),
+        autosize=True, font=dict(size=14), hoverlabel=dict(font_size=14),
+        uniformtext=dict(minsize=12, mode="hide"),
+        margin=dict(l=20, r=20, t=30, b=100),
+        legend=dict(orientation="h", yanchor="top", y=-0.3, x=0,
+                    maxheight=0.3),
     )
     fig.update_xaxes(automargin=True)
     fig.update_yaxes(automargin=True)

@@ -141,3 +141,20 @@ def test_usage_presentation_accepts_full_dataset_colors_without_changing_metrics
     assert fig.layout.xaxis.automargin
     assert fig.data[0].textposition == "auto"
     pd.testing.assert_frame_equal(metrics, original)
+
+
+def test_chart_labels_keep_readable_sizes_and_legend_space():
+    from pitch_plots import style_chart
+    import plotly.graph_objects as go
+
+    fig = go.Figure()
+    style_chart(fig)
+    assert fig.layout.autosize is True
+    assert fig.layout.width is None
+    assert fig.layout.font.size == 14
+    assert fig.layout.uniformtext.minsize == 12
+    assert fig.layout.uniformtext.mode == "hide"
+    assert fig.layout.legend.orientation == "h"
+    assert fig.layout.legend.maxheight == .3
+    assert fig.layout.margin.b >= 100
+    assert fig.layout.xaxis.automargin and fig.layout.yaxis.automargin

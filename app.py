@@ -36,7 +36,7 @@ def render_pitch_arsenal(result: PitchArsenalResult) -> None:
     st.subheader("Pitch-type comparison")
     detail = st.radio(
         "Arsenal metrics", ["All metrics", "Usage", "Velocity and spin", "Movement"],
-        horizontal=True, key="arsenal_metrics",
+        key="arsenal_metrics",
     )
     groups = {
         "All metrics": list(result.metrics.columns),
@@ -53,7 +53,7 @@ def render_pitch_arsenal(result: PitchArsenalResult) -> None:
         hide_index=True,
         alt="Pitch arsenal summary by classified Statcast pitch type",
         column_config={
-            "pitch_type": "Pitch type",
+            "pitch_type": st.column_config.TextColumn("Pitch type", pinned=True),
             "pitch_count": st.column_config.NumberColumn("Pitch count", format="%,d"),
             "usage_pct": st.column_config.NumberColumn("Usage (%)", format="%.1f%%"),
             "avg_release_speed_mph": st.column_config.NumberColumn("Avg velocity (mph)", format="%.1f"),
@@ -91,7 +91,8 @@ def render_movement_location(data: pd.DataFrame) -> None:
         st.subheader("Pitch movement")
         st.caption("Paired mean movement by pitch type · inches · catcher view")
         if summary.valid_paired.sum():
-            st.plotly_chart(movement_chart(summary, colors), alt="Paired mean pitch movement by pitch type")
+            st.plotly_chart(movement_chart(summary, colors), width="stretch",
+                            alt="Paired mean pitch movement by pitch type")
         else:
             st.info("No pitches have both movement measurements in this selection.")
     with location:
@@ -99,16 +100,18 @@ def render_movement_location(data: pd.DataFrame) -> None:
         st.caption("Individual recorded locations · feet · catcher view")
         if not locations.empty:
             zone = strike_zone_reference(rows)
-            st.plotly_chart(location_chart(locations, zone, colors), alt="Pitch locations with representative strike zone")
+            st.plotly_chart(location_chart(locations, zone, colors), width="stretch",
+                            alt="Pitch locations with representative strike zone")
             st.caption(f"{zone.label}. Physical 17-inch plate width; no ball-radius expansion.")
         else:
             st.info("No pitches have both plate location measurements in this selection.")
     if not summary.empty:
         st.subheader("Movement measurement coverage")
         st.dataframe(summary.drop(columns=["paired_horizontal_inches", "paired_vertical_inches"]),
-                     hide_index=True, alt="Movement averages and valid observation counts",
+                     hide_index=True, width="stretch",
+                     alt="Movement averages and valid observation counts",
                      column_config={
-                         "pitch_type": "Pitch type",
+                         "pitch_type": st.column_config.TextColumn("Pitch type", pinned=True),
                          "avg_horizontal_inches": st.column_config.NumberColumn("Avg horizontal movement (in)", format="%+.1f"),
                          "avg_induced_vertical_inches": st.column_config.NumberColumn("Avg induced vertical movement (in)", format="%+.1f"),
                          "valid_horizontal": "Valid horizontal pitches",
@@ -146,7 +149,7 @@ def render_scouting_report(
             st.session_state.pop("scouting_report", None)
             stored = None
     if st.button("Generate scouting report", key="generate_report", type="primary",
-                 disabled=stored is not None):
+                 disabled=stored is not None, width="stretch"):
         st.session_state.pop("scouting_report", None)
         st.session_state.pop("report_message", None)
         try:
@@ -178,7 +181,10 @@ def render_scouting_report(
     if report.arsenal.empty:
         st.info("No classified pitches available for this report.")
     else:
-        st.table(report_table(report), alt="Scouting arsenal metrics and valid sample counts")
+        st.caption("Scroll the arsenal table to read all metrics and sample counts. "
+                   "The HTML download includes the complete table.")
+        st.table(report_table(report), width="stretch", height=360,
+                 alt="Scouting arsenal metrics and valid sample counts")
     st.subheader("Automated scouting observations")
     for observation in report.observations:
         st.text(observation)
@@ -193,7 +199,7 @@ def render_scouting_report(
         st.caption("Save the preview as a self-contained HTML file. Open it in a browser to read or print.")
         st.download_button("Download scouting report (HTML)", html,
                            file_name=report_filename(report), mime="text/html",
-                           key="scouting_download", on_click="ignore")
+                           key="scouting_download", on_click="ignore", width="stretch")
 
 
 @st.cache_data(ttl=3600, max_entries=64, show_spinner=False)
@@ -234,7 +240,7 @@ def render_pitcher_selection() -> str:
     pitcher_id = ""
     if mode == "Name search":
         query = st.text_input("Pitcher name", key="pitcher_query", on_change=clear_search_selection)
-        if st.button("Search", key="search_players"):
+        if st.button("Search", key="search_players", width="stretch"):
             clear_search_selection()
             try:
                 normalized = normalize_query(query)
@@ -342,6 +348,8 @@ def main() -> None:
 
     st.title("Pitch Analytics Platform")
     st.caption("MLB pitch arsenal, movement, location and descriptive scouting · Statcast")
+    st.caption("On narrow screens, open the sidebar with the top-left toggle to select "
+               "a pitcher and dates. Scroll the tab strip to reach all four sections.")
     candidate = st.session_state.get("selected_candidate")
     active_name = candidate.full_name if candidate is not None else "Name unavailable"
     active_id = st.session_state.get("resolved_player_id")
@@ -392,7 +400,7 @@ def main() -> None:
     # mounted: chart filters survive navigation and no tab can initiate retrieval.
     # Tracking the selected tab also preserves it through unrelated widget reruns.
     overview, arsenal_view, charts, report_view = st.tabs(
-        ["Pitcher Selection & Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report"],
+        ["Pitcher Analysis", "Pitch Arsenal", "Visualizations", "Scouting Report"],
         key="analysis_section", on_change="rerun",
     )
     with overview:
