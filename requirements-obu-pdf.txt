@@ -1,0 +1,2 @@
+# Optional offline PDF validation only; not used by the Streamlit application.
+pypdf==7.1.1

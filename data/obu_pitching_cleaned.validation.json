@@ -1,0 +1,1008 @@
+{
+  "classification_disagreement_count": 7,
+  "distinct_pitchers": 9,
+  "duplicate_record_count": 0,
+  "limitations": [
+    "Source measurement units/conventions except release speed are unverified.",
+    "Name-derived IDs cannot distinguish namesakes or reconcile spelling changes.",
+    "Identical records are retained; source has no unique pitch key.",
+    "No Statcast equivalence or completeness is asserted."
+  ],
+  "missing_value_counts": {
+    "balls": 0,
+    "inning": 0,
+    "obu_horizontal_approach_angle_source": 0,
+    "obu_horizontal_break_source": 11,
+    "obu_horizontal_release_angle_source": 0,
+    "obu_induced_vertical_break_source": 11,
+    "obu_plate_height_source": 0,
+    "obu_plate_side_source": 0,
+    "obu_release_height_source": 0,
+    "obu_release_side_source": 0,
+    "obu_release_speed_mph": 0,
+    "obu_spin_axis_source": 11,
+    "obu_spin_rate_source": 11,
+    "obu_vertical_approach_angle_source": 0,
+    "obu_vertical_break_source": 11,
+    "obu_vertical_release_angle_source": 0,
+    "obu_zone_speed_source": 0,
+    "outs": 0,
+    "pa_of_inning": 0,
+    "pitch_date": 262,
+    "pitch_of_pa": 0,
+    "pitch_type": 4,
+    "strikes": 0
+  },
+  "output_record_count": 262,
+  "pdf_validation": {
+    "discrepancies": [
+      {
+        "csv": 26,
+        "field": "total_pitches",
+        "pdf": 34,
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 19,
+        "field": "pitch_count",
+        "pdf": 25,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 79.68052631578949,
+        "field": "mean_speed_mph",
+        "pdf": 79.6,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 5,
+        "field": "pitch_count",
+        "pdf": 6,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 74.424,
+        "field": "mean_speed_mph",
+        "pdf": 75.2,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 76.13,
+        "field": "max_speed_mph",
+        "pdf": 79.4,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 0,
+        "field": "pitch_count",
+        "pdf": 3,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "mean_speed_mph",
+        "pdf": 69.4,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "max_speed_mph",
+        "pdf": 70.9,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf"
+      },
+      {
+        "csv": 23,
+        "field": "total_pitches",
+        "pdf": 28,
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf"
+      },
+      {
+        "csv": 16,
+        "field": "pitch_count",
+        "pdf": 19,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf"
+      },
+      {
+        "csv": 82.1925,
+        "field": "mean_speed_mph",
+        "pdf": 82.0,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf"
+      },
+      {
+        "csv": 5,
+        "field": "pitch_count",
+        "pdf": 7,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf"
+      },
+      {
+        "csv": 82.048,
+        "field": "mean_speed_mph",
+        "pdf": 81.5,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf"
+      },
+      {
+        "csv": 27,
+        "field": "total_pitches",
+        "pdf": 41,
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 14,
+        "field": "pitch_count",
+        "pdf": 23,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 87.31714285714285,
+        "field": "mean_speed_mph",
+        "pdf": 86.5,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 9,
+        "field": "pitch_count",
+        "pdf": 12,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 79.09444444444445,
+        "field": "mean_speed_mph",
+        "pdf": 78.7,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 1,
+        "field": "pitch_count",
+        "pdf": 3,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 78.23,
+        "field": "mean_speed_mph",
+        "pdf": 77.8,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 78.23,
+        "field": "max_speed_mph",
+        "pdf": 78.4,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-colton-angell-pitcher.pdf"
+      },
+      {
+        "csv": 45,
+        "field": "total_pitches",
+        "pdf": 63,
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 30,
+        "field": "pitch_count",
+        "pdf": 44,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 85.6546666666667,
+        "field": "mean_speed_mph",
+        "pdf": 85.6,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 8,
+        "field": "pitch_count",
+        "pdf": 9,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 83.11,
+        "field": "mean_speed_mph",
+        "pdf": 82.9,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 2,
+        "field": "pitch_count",
+        "pdf": 4,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 79.705,
+        "field": "mean_speed_mph",
+        "pdf": 78.7,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 3,
+        "field": "pitch_count",
+        "pdf": 4,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 75.94333333333333,
+        "field": "mean_speed_mph",
+        "pdf": 74.9,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf"
+      },
+      {
+        "csv": 32,
+        "field": "total_pitches",
+        "pdf": 47,
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 11,
+        "field": "pitch_count",
+        "pdf": 17,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 86.19727272727273,
+        "field": "mean_speed_mph",
+        "pdf": 84.7,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 8,
+        "field": "pitch_count",
+        "pdf": 12,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 82.62125,
+        "field": "mean_speed_mph",
+        "pdf": 81.6,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 7,
+        "field": "pitch_count",
+        "pdf": 11,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 76.69571428571427,
+        "field": "mean_speed_mph",
+        "pdf": 75.8,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 5,
+        "field": "pitch_count",
+        "pdf": 6,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 85.28599999999999,
+        "field": "mean_speed_mph",
+        "pdf": 84.9,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf"
+      },
+      {
+        "csv": 19,
+        "field": "total_pitches",
+        "pdf": 30,
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 13,
+        "field": "pitch_count",
+        "pdf": 19,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 83.79153846153848,
+        "field": "mean_speed_mph",
+        "pdf": 82.2,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 2,
+        "field": "pitch_count",
+        "pdf": 5,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 75.56,
+        "field": "mean_speed_mph",
+        "pdf": 74.4,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 3,
+        "field": "pitch_count",
+        "pdf": 4,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 81.80333333333333,
+        "field": "mean_speed_mph",
+        "pdf": 82.4,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 84.16,
+        "field": "max_speed_mph",
+        "pdf": 84.4,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 0,
+        "field": "pitch_count",
+        "pdf": 1,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "mean_speed_mph",
+        "pdf": 77.9,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "max_speed_mph",
+        "pdf": 77.9,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 0,
+        "field": "pitch_count",
+        "pdf": 1,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "mean_speed_mph",
+        "pdf": 76.2,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "max_speed_mph",
+        "pdf": 76.2,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf"
+      },
+      {
+        "csv": 22,
+        "field": "total_pitches",
+        "pdf": 29,
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 10,
+        "field": "pitch_count",
+        "pdf": 12,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 83.445,
+        "field": "mean_speed_mph",
+        "pdf": 83.2,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 5,
+        "field": "pitch_count",
+        "pdf": 7,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 71.89,
+        "field": "mean_speed_mph",
+        "pdf": 72.2,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 72.67,
+        "field": "max_speed_mph",
+        "pdf": 74.4,
+        "pitch_type": "Curveball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 4,
+        "field": "pitch_count",
+        "pdf": 5,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 79.0,
+        "field": "mean_speed_mph",
+        "pdf": 79.1,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 2,
+        "field": "pitch_count",
+        "pdf": 4,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 78.68,
+        "field": "mean_speed_mph",
+        "pdf": 78.0,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 0,
+        "field": "pitch_count",
+        "pdf": 1,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "mean_speed_mph",
+        "pdf": 83.0,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "max_speed_mph",
+        "pdf": 83.0,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf"
+      },
+      {
+        "csv": 55,
+        "field": "total_pitches",
+        "pdf": 74,
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 32,
+        "field": "pitch_count",
+        "pdf": 42,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 83.155625,
+        "field": "mean_speed_mph",
+        "pdf": 82.3,
+        "pitch_type": "Fastball",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 14,
+        "field": "pitch_count",
+        "pdf": 18,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 78.34928571428573,
+        "field": "mean_speed_mph",
+        "pdf": 76.5,
+        "pitch_type": "Changeup",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 6,
+        "field": "pitch_count",
+        "pdf": 10,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 73.65499999999999,
+        "field": "mean_speed_mph",
+        "pdf": 74.6,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 75.24,
+        "field": "max_speed_mph",
+        "pdf": 79.9,
+        "pitch_type": "Slider",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": 0,
+        "field": "pitch_count",
+        "pdf": 1,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "mean_speed_mph",
+        "pdf": 62.4,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      },
+      {
+        "csv": null,
+        "field": "max_speed_mph",
+        "pdf": 62.4,
+        "pitch_type": "Cutter",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf"
+      }
+    ],
+    "limitations": [
+      "CSV has no source date; name association does not establish equivalent sample scope.",
+      "Only printed counts and speed summaries compared; all other report metrics remain references."
+    ],
+    "pitchers_without_reports": [],
+    "reports": [
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 26,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 84.0,
+            "mean_speed_mph": 79.6,
+            "pitch_count": 25,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 79.4,
+            "mean_speed_mph": 75.2,
+            "pitch_count": 6,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 70.9,
+            "mean_speed_mph": 69.4,
+            "pitch_count": 3,
+            "pitch_type": "Slider"
+          }
+        ],
+        "pitcher_id": "obu-e1ce45b8-1b36-5c59-8c8f-d455fa21d7cc",
+        "pitcher_name_report": "AJ MINYARD",
+        "source_file": "oklaho-aj-minyard-pitcher.pdf",
+        "source_sha256": "45bda1e7103c95152f2efa6315a8d43f1161f44ff576a583baaed478b2d36e48",
+        "total_pitches": 34
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 23,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 83.6,
+            "mean_speed_mph": 82.0,
+            "pitch_count": 19,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 83.4,
+            "mean_speed_mph": 81.5,
+            "pitch_count": 7,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 83.6,
+            "mean_speed_mph": 83.3,
+            "pitch_count": 2,
+            "pitch_type": "Cutter"
+          }
+        ],
+        "pitcher_id": "obu-f045cd5e-ab95-56e3-a2d4-d1238601956d",
+        "pitcher_name_report": "CADE STEPHENTICH",
+        "source_file": "oklaho-cade-stephentich-pitcher.pdf",
+        "source_sha256": "ef45161de0df0d3b1981ee32078f37516dd5e168bf7b0b0937f69ec3f65db565",
+        "total_pitches": 28
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 27,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 87.9,
+            "mean_speed_mph": 86.5,
+            "pitch_count": 23,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 81.1,
+            "mean_speed_mph": 78.7,
+            "pitch_count": 12,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 78.4,
+            "mean_speed_mph": 77.8,
+            "pitch_count": 3,
+            "pitch_type": "Slider"
+          },
+          {
+            "max_speed_mph": 81.1,
+            "mean_speed_mph": 79.9,
+            "pitch_count": 2,
+            "pitch_type": "Cutter"
+          },
+          {
+            "max_speed_mph": 78.3,
+            "mean_speed_mph": 78.3,
+            "pitch_count": 1,
+            "pitch_type": "Curveball"
+          }
+        ],
+        "pitcher_id": "obu-8a90472a-a8db-5d40-be16-91a97f237976",
+        "pitcher_name_report": "COLTON ANGELL",
+        "source_file": "oklaho-colton-angell-pitcher.pdf",
+        "source_sha256": "819521c45677890f2c3db5124166eeddc0c58588dfcea3772a77c25bcb8c0727",
+        "total_pitches": 41
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 13,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 88.9,
+            "mean_speed_mph": 87.1,
+            "pitch_count": 7,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 73.7,
+            "mean_speed_mph": 73.2,
+            "pitch_count": 4,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 87.9,
+            "mean_speed_mph": 87.8,
+            "pitch_count": 2,
+            "pitch_type": "Cutter"
+          }
+        ],
+        "pitcher_id": "obu-7b41222e-3aad-51e7-bf77-37b994e4e65c",
+        "pitcher_name_report": "DILLON FRENCH",
+        "source_file": "oklaho-dillon-french-pitcher.pdf",
+        "source_sha256": "3af9ab2f566ae602d0ba8d07370a27d729f52d662af5afb8d38bbf674372f000",
+        "total_pitches": 13
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 45,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 89.2,
+            "mean_speed_mph": 85.6,
+            "pitch_count": 44,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 87.4,
+            "mean_speed_mph": 82.9,
+            "pitch_count": 9,
+            "pitch_type": "Cutter"
+          },
+          {
+            "max_speed_mph": 80.5,
+            "mean_speed_mph": 78.7,
+            "pitch_count": 4,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 76.4,
+            "mean_speed_mph": 74.9,
+            "pitch_count": 4,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 79.7,
+            "mean_speed_mph": 79.6,
+            "pitch_count": 2,
+            "pitch_type": "Slider"
+          }
+        ],
+        "pitcher_id": "obu-4c3a1571-ed80-57eb-90a1-c9f9dbf119b8",
+        "pitcher_name_report": "ELI MONTGOMERY",
+        "source_file": "oklaho-eli-montgomery-pitcher.pdf",
+        "source_sha256": "92e44eaeb7614c7851ab073f30ce864191e842e8a9da2a7c6524a3a9f64cb1de",
+        "total_pitches": 63
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 32,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 88.5,
+            "mean_speed_mph": 84.7,
+            "pitch_count": 17,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 86.1,
+            "mean_speed_mph": 81.6,
+            "pitch_count": 12,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 78.0,
+            "mean_speed_mph": 75.8,
+            "pitch_count": 11,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 88.2,
+            "mean_speed_mph": 84.9,
+            "pitch_count": 6,
+            "pitch_type": "Cutter"
+          },
+          {
+            "max_speed_mph": 84.8,
+            "mean_speed_mph": 84.8,
+            "pitch_count": 1,
+            "pitch_type": "Slider"
+          }
+        ],
+        "pitcher_id": "obu-9841722c-f374-584b-99f2-ca10f3df51b6",
+        "pitcher_name_report": "JACOB GALLOWAY",
+        "source_file": "oklaho-jacob-galloway-pitcher.pdf",
+        "source_sha256": "864d9d6f67f16876e03ecc2201725bd3f5aa9095cb94b4bc28df15d8ffdcbaf5",
+        "total_pitches": 47
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 19,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 84.5,
+            "mean_speed_mph": 82.2,
+            "pitch_count": 19,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 76.1,
+            "mean_speed_mph": 74.4,
+            "pitch_count": 5,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 84.4,
+            "mean_speed_mph": 82.4,
+            "pitch_count": 4,
+            "pitch_type": "Cutter"
+          },
+          {
+            "max_speed_mph": 77.9,
+            "mean_speed_mph": 77.9,
+            "pitch_count": 1,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 76.2,
+            "mean_speed_mph": 76.2,
+            "pitch_count": 1,
+            "pitch_type": "Slider"
+          }
+        ],
+        "pitcher_id": "obu-710bf974-2c3e-5a05-ad63-6af544c030df",
+        "pitcher_name_report": "JARRMEZ DANIELS",
+        "source_file": "oklaho-jarrmez-daniels-pitcher.pdf",
+        "source_sha256": "6030b911174046c4320597d8a1b99d01a4bbc632cc1dfb4572e77aeb8877ce0f",
+        "total_pitches": 30
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 22,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 85.3,
+            "mean_speed_mph": 83.2,
+            "pitch_count": 12,
+            "pitch_type": "Cutter"
+          },
+          {
+            "max_speed_mph": 74.4,
+            "mean_speed_mph": 72.2,
+            "pitch_count": 7,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 80.7,
+            "mean_speed_mph": 79.1,
+            "pitch_count": 5,
+            "pitch_type": "Slider"
+          },
+          {
+            "max_speed_mph": 79.4,
+            "mean_speed_mph": 78.0,
+            "pitch_count": 4,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 83.0,
+            "mean_speed_mph": 83.0,
+            "pitch_count": 1,
+            "pitch_type": "Fastball"
+          }
+        ],
+        "pitcher_id": "obu-6c01441c-1f16-583d-8e79-a06fb1a3cced",
+        "pitcher_name_report": "NICK COZZI",
+        "source_file": "oklaho-nick-cozzi-pitcher.pdf",
+        "source_sha256": "65bed95700508de4f904453d472a0910c0000d12e191ae8b314b342ae016ea15",
+        "total_pitches": 29
+      },
+      {
+        "context": "Printed metrics table; release speed mph; no chart extraction.",
+        "csv_pitch_count": 55,
+        "date_text": [
+          "OCTOBER 28, 2026"
+        ],
+        "level": "pitcher_pitch_type_summary",
+        "metrics": [
+          {
+            "max_speed_mph": 85.6,
+            "mean_speed_mph": 82.3,
+            "pitch_count": 42,
+            "pitch_type": "Fastball"
+          },
+          {
+            "max_speed_mph": 80.1,
+            "mean_speed_mph": 76.5,
+            "pitch_count": 18,
+            "pitch_type": "Changeup"
+          },
+          {
+            "max_speed_mph": 79.9,
+            "mean_speed_mph": 74.6,
+            "pitch_count": 10,
+            "pitch_type": "Slider"
+          },
+          {
+            "max_speed_mph": 75.4,
+            "mean_speed_mph": 74.2,
+            "pitch_count": 3,
+            "pitch_type": "Curveball"
+          },
+          {
+            "max_speed_mph": 62.4,
+            "mean_speed_mph": 62.4,
+            "pitch_count": 1,
+            "pitch_type": "Cutter"
+          }
+        ],
+        "pitcher_id": "obu-77d3de76-4389-5df7-b084-d916bfac6de6",
+        "pitcher_name_report": "TEAGON STANDLEE",
+        "source_file": "oklaho-teagon-standlee-pitcher.pdf",
+        "source_sha256": "da89560c66e201f15fe3dba573a3dda13ea142893ea3a69262fcc3e082877472",
+        "total_pitches": 74
+      }
+    ],
+    "status": "validated_with_discrepancies"
+  },
+  "pitch_classification_counts": {
+    "Changeup": 45,
+    "Curveball": 25,
+    "Cutter": 32,
+    "Fastball": 142,
+    "Slider": 14,
+    "UNCLASSIFIED": 4
+  },
+  "rejected_reasons": {
+    "blank_record": 8
+  },
+  "rejected_record_count": 8,
+  "rejected_records": [
+    {
+      "reason": "blank_record",
+      "source_record": 56
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 89
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 117
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 144
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 190
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 204
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 227
+    },
+    {
+      "reason": "blank_record",
+      "source_record": 247
+    }
+  ],
+  "schema_version": "1",
+  "source_file": "OBU Pitchers 10-28-2026_03-02PM_Oklahoma Baptist University Baseball x ECU Fall 2026-2027 (5).csv",
+  "source_record_count": 270,
+  "source_sha256": "ecc85d062c228edc19d41e73916ed41215d3581efd6cc5905ef8ca5f1b772939",
+  "unmapped_source_columns": [],
+  "warnings": []
+}
