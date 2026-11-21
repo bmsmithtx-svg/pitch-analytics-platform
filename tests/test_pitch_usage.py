@@ -65,17 +65,16 @@ def test_usage_height_grows_with_larger_arsenals():
 
 def test_arsenal_aggregates_once_per_loaded_dashboard_render(monkeypatch):
     import json
-    from pathlib import Path
     from unittest.mock import Mock
 
-    from streamlit.testing.v1 import AppTest
+    from auth_helpers import authenticated_app
 
     data = pd.DataFrame({'pitch_type': ['FF', 'FF', 'SL']})
     fetch = Mock(return_value=data)
     aggregate = Mock(wraps=aggregate_pitch_arsenal)
     monkeypatch.setattr('statcast_service.get_pitcher_statcast', fetch)
     monkeypatch.setattr('pitch_arsenal.aggregate_pitch_arsenal', aggregate)
-    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / 'app.py')).run()
+    app = authenticated_app()
     assert not app.exception
     fetch.assert_not_called()
     app.sidebar.radio(key="selection_source").set_value("Manual ID").run()

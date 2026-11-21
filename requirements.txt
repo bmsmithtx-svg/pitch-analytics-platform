@@ -6,3 +6,6 @@ pybaseball==2.2.7
 plotly==7.1.0
 pytest==9.2.0
 requests==2.34.2
+
+# Administrator-managed, salted Argon2id password hashes (Python 3.12).
+argon2-cffi==25.1.0

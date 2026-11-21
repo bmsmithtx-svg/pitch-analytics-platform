@@ -16,3 +16,10 @@ def block_external_http(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("HTTP access is disabled in automated tests; mock retrieval.")
 
     monkeypatch.setattr(requests.sessions.Session, "request", reject_request)
+
+
+@pytest.fixture(autouse=True)
+def isolated_login_limiter(monkeypatch):
+    """Keep process-local throttling deterministic between unrelated test cases."""
+    from authentication import LoginLimiter
+    monkeypatch.setattr("authentication_ui.LOGIN_LIMITER", LoginLimiter())

@@ -5,6 +5,8 @@ from datetime import date, datetime, timedelta, timezone
 import pandas as pd
 import streamlit as st
 
+from authentication_ui import require_authentication
+
 from pitch_movement import (
     filter_pitch_types, movement_summary, prepare_pitch_coordinates,
     strike_zone_reference, valid_locations,
@@ -329,6 +331,7 @@ def main() -> None:
     st.set_page_config(
         page_title="Pitch Analytics Platform", page_icon="⚾", layout="wide",
     )
+    require_authentication()
     with st.sidebar:
         st.header("Pitcher selection")
         pitcher_id = render_pitcher_selection()

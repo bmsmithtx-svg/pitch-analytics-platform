@@ -1,11 +1,10 @@
 """Offline Streamlit identity transitions through the unchanged retrieval path."""
 from datetime import date
-from pathlib import Path
 from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from streamlit.testing.v1 import AppTest
+from auth_helpers import authenticated_app
 
 from pitcher_search import PitcherSearchError, parse_candidates
 from statcast_validation import NoStatcastDataError
@@ -19,7 +18,7 @@ def dashboard(monkeypatch):
     fetch = Mock(return_value=pd.DataFrame({"pitch_type": ["FF"]}))
     monkeypatch.setattr("pitcher_search.fetch_candidates", lookup)
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
-    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run(timeout=10)
+    app = authenticated_app()
     assert not app.exception
     yield app, lookup, fetch
     st.cache_data.clear()

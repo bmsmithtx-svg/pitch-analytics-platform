@@ -3,13 +3,12 @@
 All identities and pitch rows are synthetic UI fixtures, not player statistics.
 """
 from datetime import date
-from pathlib import Path
 from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 import streamlit as st
-from streamlit.testing.v1 import AppTest
+from auth_helpers import authenticated_app
 
 from pitcher_search import parse_candidates
 from statcast_validation import NoStatcastDataError, StatcastError
@@ -27,7 +26,7 @@ def dashboard(monkeypatch):
     fetch = Mock(return_value=rows)
     monkeypatch.setattr("pitcher_search.fetch_candidates", lookup)
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
-    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run(timeout=10)
+    app = authenticated_app()
     assert not app.exception
     yield app, lookup, fetch
     st.cache_data.clear()
