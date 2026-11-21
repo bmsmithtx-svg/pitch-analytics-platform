@@ -3,7 +3,7 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 2.5 — Responsive design and accessibility
+## Current milestone: 3.2 — Username/password authentication
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
@@ -31,7 +31,8 @@ use the same loaded dataset. The movement/location filter does not change usage,
 arsenal metrics or reports. The sidebar remains accessible from every tab;
 on narrow screens Streamlit collapses it behind its sidebar toggle, and the
 native tab strip can scroll horizontally. Charts use available container width.
-No custom frontend or new dependency is introduced.
+Authentication uses native Streamlit controls and Argon2id; analytics
+dependencies remain unchanged.
 
 **Changed in 2.2:** date edits now immediately clear prior results and reports,
 just like pitcher changes. Editing controls never downloads data; choose
@@ -505,9 +506,12 @@ an availability-guaranteed hosting service.
 2. In the `bmsmithtx-svg` workspace choose **Create app**, then the existing-app
    option. Set repository `bmsmithtx-svg/pitch-analytics-platform`, branch `main`,
    main file path `app.py`. Do this after the milestone PR is merged.
-3. In **Advanced settings**, select Python **3.12**. Leave secrets empty for
-   current functionality. Deploy and watch the build logs for dependency errors.
-4. Open the assigned app URL. Verify name search, player confirmation, Manual ID,
+3. In **Advanced settings**, select Python **3.12**. Configure hashed coach
+   credentials in **Secrets** as described in Milestone 3.2 below. Deploy and
+   watch build logs for dependency errors; absent credentials block all access.
+4. Open the assigned app URL. Verify the login screen blocks unauthorized access,
+   then sign in with an administrator-issued account. Verify name search, player
+   confirmation, Manual ID,
    an available historical date window of at most 30 days, analysis, all four
    tabs, chart filters, scouting report preview and HTML download. Confirm
    changing pitcher/dates invalidates stale analysis. Live retrieval is a
@@ -534,7 +538,9 @@ Official maintenance references: [deployment and Python selection](https://docs.
    <https://bmsmithtx-svg.github.io/pitch-analytics-platform/>. Verify that it
    displays the PAP entry page and the launch link reaches the verified app.
 4. Share the Pages URL with coaches. They need a browser and internet access,
-   with no Python installation or GitHub use. For a private app, they also need
+   with no Python installation or GitHub use. Each coach needs an
+   administrator-issued PAP username and password. For a hosting-level private
+   app, they also need
    the hosting service's viewer sign-in and an administrator-issued invitation.
 
 An empty, malformed, non-HTTPS, or credential-bearing configuration leaves the
@@ -552,7 +558,8 @@ or local files into that directory. Tests enforce this publishing boundary.
 The Streamlit server does not enable static file serving or the development
 agent API. CORS and XSRF protections retain their defaults. Local
 `.streamlit/secrets.toml` is ignored; confirm with `git check-ignore` before
-creating one. No secrets file is required or provided.
+creating one. Milestone 3.2 requires administrator-configured hashed credentials;
+only a placeholder example is tracked.
 
 The current repository and Pages site are public. A public repository's
 Community Cloud app is public by default. The landing page is not an access
@@ -606,3 +613,175 @@ app is chosen. Hosting account setup, actual app URL configuration, live MLB
 connectivity, report download behavior remotely, and coach access remain manual
 acceptance tasks until explicitly recorded as verified. Repository release/tag
 publication alone does not mean the service is deployed.
+
+
+## Milestone 3.2 — Username/password authentication
+
+The architecture remains **GitHub Pages → hosted Streamlit → PAP analytics**.
+The public landing page and its disabled launch behavior are unchanged. The
+existing Streamlit URL now displays a dedicated PAP sign-in screen, including
+when opened directly. Only successful server-side verification unlocks search,
+retrieval, charts, reports, previews and downloads. No registration, password
+recovery, roles or administrative dashboard is included.
+
+### Generate and configure credentials locally
+
+Use Python 3.12 and install `requirements.txt` into your development environment.
+Existing dependency pins remain; `argon2-cffi==25.1.0` is added. Generate a unique,
+strong password per coach with a password manager and communicate it privately.
+Do not paste passwords or real hashes into issues, PRs or Codex.
+
+```sh
+python scripts/generate_password_hash.py
+```
+
+The utility prompts twice without echoing the password. It rejects arguments,
+empty/mismatched passwords, passwords over 1024 UTF-8 bytes, and insecure stdin
+fallback. Its only successful output is a randomly salted Argon2id hash. Copy it
+directly into Secrets, then clear the terminal/clipboard as appropriate. Treat
+hashes as sensitive: they permit offline guessing if disclosed. The profile is
+RFC 9106 low-memory: version 19, 65536 KiB (64 MiB), 3 iterations, 4 lanes,
+16-byte random salt and 32-byte hash. Configuration accepts this exact profile;
+use this utility when replacing hashes rather than changing parameters ad hoc.
+Verification uses the maintained library's
+[PasswordHasher API](https://argon2-cffi.readthedocs.io/en/stable/api.html).
+
+Before creating a local secrets file, confirm it is ignored:
+
+```sh
+git check-ignore .streamlit/secrets.toml
+cp .streamlit/secrets.example.toml .streamlit/secrets.toml
+```
+
+Edit the ignored file privately. Replace every placeholder username and hash in
+its `[credentials.users."REPLACE_WITH_COACH_USERNAME"]` tables; use one table per
+coach with `password_hash = "REPLACE_WITH_GENERATED_ARGON2ID_HASH"` and
+`enabled = true`. The tracked example contains placeholders only and intentionally
+cannot authenticate anyone. Usernames are case-sensitive, nonempty, have no
+surrounding whitespace, and are limited to 128 characters. Passwords are not
+trimmed or normalized. Configuration supports up to 1024 accounts.
+
+Each account must contain exactly `password_hash` and Boolean `enabled`; plaintext
+passwords and unexpected fields are rejected. Missing secrets, invalid TOML,
+malformed/unsupported hashes, or no enabled accounts fail closed with an
+administrator-contact message. Errors never display configuration contents.
+There is no development or production bypass. Start the app normally:
+
+```sh
+python -m streamlit run app.py
+```
+
+### Configure Streamlit Community Cloud
+
+1. Deploy repository `bmsmithtx-svg/pitch-analytics-platform`, branch `main`,
+   entrypoint `app.py`, Python 3.12. Keep static serving and the agent API off.
+2. For a new deployment, paste the completed TOML in **Advanced settings →
+   Secrets**. For an existing app, open its management menu, **Settings →
+   Secrets**, paste the same TOML, and select **Save**. Preserve unrelated secrets.
+   Follow the official [Cloud secrets instructions](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
+   and [app settings instructions](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/app-settings).
+3. Restart/reboot the app after credential changes to ensure every worker loads
+   the new configuration. A local change likewise requires a server restart.
+   Restarting discards active sessions and throttle counters.
+4. Validate using the actual HTTPS URL. The URL does not need to change for
+   authentication. Only after hosted checks pass, set the verified URL in
+   `docs/config.js` through the existing deployment workflow. That file must
+   contain only the public destination URL, never any credential or hash.
+
+To **add** a coach, generate a unique password/hash and add a new username table
+with `enabled = true`. To **disable** one, set `enabled = false` or remove its
+entire table. Keep at least one enabled account to keep sign-in available. To
+**replace** a password, generate a fresh hash and replace that account's
+`password_hash`. Save and restart as above; privately communicate the new
+password. There is no public credential management. Never reuse test credentials.
+An enabled flag and a hash revision are checked on every dashboard rerun, so a
+loaded credential change also revokes sessions authenticated with the old hash.
+
+### Session and throttling behavior
+
+Authentication is a non-widget, server-side Streamlit session entry. Credentials
+are never placed in URLs, public frontend configuration, reports or logs. Login
+form fields are discarded after every submission. Invalid usernames, disabled
+accounts, wrong passwords and throttled attempts receive the same generic error;
+unknown and disabled accounts use a dummy Argon2 verification. Throttled attempts
+skip hashing. No account-existence message is displayed.
+
+Normal reruns and tab changes preserve authentication. Separate browser tabs and
+users have independent sessions. Refresh, disconnect/session expiration, app
+sleep/restart or closing a tab may require signing in again; there is no durable
+login cookie or promised session lifetime. **Logout** clears all that session's
+state, including identity, selections, analysis, filters, report preview and
+report HTML. Signing in again requires selecting/loading analysis anew.
+Logout cannot erase previously downloaded files or content already seen by a
+coach. Streamlit's in-memory download endpoint may retain a previously issued
+URL until runtime cleanup; do not treat logout as revoking copies or already
+issued download URLs. New report generation and download controls require login.
+Shared MLB retrieval caches retain their existing behavior, behind the gate;
+logout does not clear other users' sessions or shared caches.
+
+Thread-safe process-local throttling serializes hash work (one 64 MiB verification
+at a time). Five failed attempts for a supplied username within a fixed 300-second
+window block it until that window ends, including correct passwords. Unknown
+names use the same counters. A global limit permits 50 verifications per fixed
+60-second window, including successful logins, to bound work when names vary.
+Success clears that username's failure count. At most 1024 hashed-name counters
+are retained; expired entries are pruned, and saturation rejects new names
+without evicting active locks. The fixed window starts on the first attempt;
+blocked attempts do not extend it. Wait up to five minutes before retrying an
+account lock, or one minute for the global limit.
+
+This is **not durable, distributed brute-force protection**. Restarts reset it,
+multiple Cloud instances have independent counters, and anonymous traffic can
+consume the global budget or lock known usernames. Administrators must monitor
+availability, protect Secrets access, issue strong passwords, promptly disable
+departed coaches and rotate credentials if exposed. No external identity service
+or database is introduced.
+
+### Validation and acceptance
+
+Offline AppTest tests inject synthetic secrets and sign in through the actual
+form; there is no production test bypass. They cover login gating, valid and
+invalid accounts, generic errors, missing/malformed secrets, credential changes,
+reruns, logout with loaded reports, session isolation, direct URL query attempts,
+and temporary throttling. Unit tests cover hash generation, profile validation,
+input limits, expiration, bounded counters and concurrent attempts. Existing
+analytics regressions still run against mocked data with HTTP blocked.
+
+Run the full validation before review:
+
+```sh
+python -m pytest -q
+python -m py_compile *.py scripts/*.py tests/*.py
+python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
+python -m mypy --follow-imports=silent --ignore-missing-imports authentication.py authentication_ui.py scripts/generate_password_hash.py app.py
+node tests/deployment.cjs
+git diff --check
+```
+
+Mypy is a development-only tool (validation used 1.19.1), not an application
+runtime dependency. The flags check edited application modules while suppressing
+untyped third-party imports; they do not claim a fully typed analytics project.
+
+Hosted acceptance remains an administrator task until explicitly verified:
+
+- In a fresh/private browser session, open the direct Streamlit URL and the Pages
+  launch URL. Both routes to Streamlit must show sign-in without analytics.
+- Reject an unknown username and a wrong password with the same message. Sign in
+  with each configured coach account and check independent sessions.
+- Verify the existing search/manual ID, inclusive 30-day limit, all four tabs,
+  chart filtering, report preview and HTML download with an authorized live
+  request. Confirm existing stale-result invalidation.
+- Logout after loading analysis/report, rerun, then sign in again. Old results
+  must be absent. Check refresh behavior, mobile/tablet layout and keyboard access.
+- Disable/rotate a test coach account in Secrets, reboot, and confirm old access
+  is revoked. Confirm missing/malformed configuration blocks the dashboard.
+- Never copy production credentials, hashes or sensitive report contents into
+  acceptance records, screenshots or build logs.
+
+GitHub Pages itself remains public and is **not password-protected**. Application
+authentication does not protect files committed to a public GitHub repository.
+Future school-pitcher datasets requiring restricted access must not be committed
+publicly. School-data ingestion and any changes to shared-cache/privacy policies
+remain outside Milestone 3.2. Publishing `v3.2` does not establish hosted
+availability; real credential configuration, destination URL, production sign-in
+and hosted analytics acceptance must be recorded separately.

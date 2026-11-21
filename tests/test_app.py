@@ -1,14 +1,11 @@
 """Offline smoke coverage for the Streamlit dashboard foundation."""
 
-from pathlib import Path
-
-from streamlit.testing.v1 import AppTest
+from auth_helpers import authenticated_app
 
 
 def test_dashboard_renders_without_data() -> None:
     """The initial dashboard renders navigation without fake metrics."""
-    app_path = Path(__file__).resolve().parents[1] / "app.py"
-    app = AppTest.from_file(str(app_path)).run(timeout=10)
+    app = authenticated_app()
 
     assert not app.exception
     assert app.title[0].value == "Pitch Analytics Platform"
@@ -31,7 +28,7 @@ def test_request_preview_and_failure_clear_previous_result(monkeypatch) -> None:
 
     fetch = Mock(return_value=pd.DataFrame({"pitcher": [123], "release_speed": [None]}))
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
-    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
+    app = authenticated_app()
     fetch.assert_not_called()
     app.sidebar.radio(key="selection_source").set_value("Manual ID").run()
     app.sidebar.text_input(key="pitcher_id").set_value("123")
@@ -56,7 +53,7 @@ def _request_app(monkeypatch, data):
 
     fetch = Mock(return_value=data)
     monkeypatch.setattr("statcast_service.get_pitcher_statcast", fetch)
-    app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py")).run()
+    app = authenticated_app()
     fetch.assert_not_called()
     app.sidebar.radio(key="selection_source").set_value("Manual ID").run()
     app.sidebar.text_input(key="pitcher_id").set_value("123")
