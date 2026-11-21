@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from authentication_ui import require_authentication
+from obu_ui import clear_obu_analysis, render_obu_dashboard
 
 from pitch_movement import (
     filter_pitch_types, movement_summary, prepare_pitch_coordinates,
@@ -233,6 +234,15 @@ def change_selection_mode() -> None:
     st.session_state["pitcher_id"] = ""
 
 
+def change_data_source() -> None:
+    """Revoke source-owned identities, loaded observations and report downloads."""
+    clear_search_selection()
+    clear_obu_analysis()
+    for key in ("effective_identity", "selection_source", "pitcher_query", "pitcher_id",
+                "obu_pitcher", "obu_identity", "arsenal_metrics"):
+        st.session_state.pop(key, None)
+
+
 def render_pitcher_selection() -> str:
     """Keep typed query, result query, selection and effective identity separate."""
     st.session_state.setdefault("resolved_player_id", None)
@@ -332,6 +342,15 @@ def main() -> None:
         page_title="Pitch Analytics Platform", page_icon="⚾", layout="wide",
     )
     require_authentication()
+    with st.sidebar:
+        source = st.selectbox("Data source", ["MLB (Statcast)", "OBU (Oklahoma Baptist University)"],
+                              key="data_source", on_change=change_data_source)
+    if st.session_state.get("active_data_source", source) != source:
+        change_data_source()
+    st.session_state["active_data_source"] = source
+    if source == "OBU (Oklahoma Baptist University)":
+        render_obu_dashboard()
+        return
     with st.sidebar:
         st.header("Pitcher selection")
         pitcher_id = render_pitcher_selection()
