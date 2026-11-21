@@ -1,0 +1,7 @@
+# Keep raw inputs and ad hoc athlete-level artifacts local.
+*
+!.gitignore
+!README.md
+# Publication of this supplied dataset was explicitly authorized by the user.
+!obu_pitching_cleaned.csv
+!obu_pitching_cleaned.validation.json

@@ -3,7 +3,7 @@
 A professional MLB pitching analytics and scouting web application built with
 Python 3.12, Streamlit, pandas, NumPy, pybaseball, and Plotly.
 
-## Current milestone: 3.2 — Username/password authentication
+## Current milestone: 3.3 — OBU data preparation
 
 The dashboard preserves the Statcast pipeline and Milestone 1.3 arsenal summary,
 and adds movement, plate locations, reference strike zones and local pitch-type
@@ -785,3 +785,20 @@ publicly. School-data ingestion and any changes to shared-cache/privacy policies
 remain outside Milestone 3.2. Publishing `v3.2` does not establish hosted
 availability; real credential configuration, destination URL, production sign-in
 and hosted analytics acceptance must be recorded separately.
+
+## Milestone 3.3 — OBU data preparation
+
+The offline preparation pipeline is implemented separately from the application.
+Run `python scripts/prepare_obu_data.py --source /path/to/original.csv` to create
+local `data/obu_pitching_cleaned.csv` and its `.validation.json` report. Optional
+PDF checks use `--pdf-dir /path/to/reports` after installing
+`requirements-obu-pdf.txt`. No live retrieval occurs. The application continues
+to use its existing MLB workflow; Milestone 3.4 controls and analytics are deferred.
+
+See [OBU schema, source inventory, regeneration and limitations](data/README.md).
+Actual inputs were found and processed locally. The user confirmed school/data-owner
+authorization to publish this supplied dataset and validation report. Raw inputs
+remain separate; future school records require an independent publication review.
+Source dates, units/coordinate conventions and CSV/PDF sample discrepancies need
+review before integration. No source measurements are inferred or fabricated,
+and no Statcast compatibility is assumed from similar column names.
