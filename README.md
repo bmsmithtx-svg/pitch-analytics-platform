@@ -802,3 +802,81 @@ remain separate; future school records require an independent publication review
 Source dates, units/coordinate conventions and CSV/PDF sample discrepancies need
 review before integration. No source measurements are inferred or fabricated,
 and no Statcast compatibility is assumed from similar column names.
+
+## Milestone 3.4 — OBU pitcher integration
+
+After signing in, choose **MLB (Statcast)** or **OBU (Oklahoma Baptist
+University)** in the sidebar. MLB retains its name search, manual MLBAM ID,
+explicit retrieval, caching and inclusive 30-day date limit. OBU reads only
+`data/obu_pitching_cleaned.csv`; selecting or analyzing an OBU pitcher makes no
+MLB requests and requires no MLB identity. Pitcher options come from the dataset.
+Choose a name, click **Generate analysis**, then use the existing four tabs.
+Changing sources clears incompatible identities, analytics, chart filters and
+reports. Changing OBU pitchers or dataset contents invalidates OBU analysis and
+report downloads. Logout retains the existing authorization protections.
+
+The authoritative Milestone 3.3 CSV contains 262 observations from 9 pitchers:
+AJ Minyard, Cade Stephentich, Colton Angell, Dillon French, Eli Montgomery,
+Jacob Galloway, Jarrmez Daniels, Nick Cozzi and Teagon Standlee. It retains 142
+fastballs, 45 changeups, 32 cutters, 25 curveballs, 14 sliders and 4 unclassified
+observations. The original export contained 270 records; 8 blank separators were
+rejected and no duplicates were identified. See [data/README.md](data/README.md)
+and `data/obu_pitching_cleaned.validation.json` for provenance and preparation.
+The 7 classification disagreements and 78 PDF count/speed discrepancies are
+preserved. The integration does not ingest PDFs or change cleaned observations.
+
+Supported OBU analysis includes observation counts, classified pitch usage,
+mean/max release velocity (mph), and independent mean spin and break measurements
+in **source units (unverified)**. Velocity is available for 262 observations;
+spin, horizontal break, vertical break and induced vertical break each have 251
+valid observations. Every metric has a valid sample count, and overall coverage
+includes unclassified observations. Usage excludes the 4 unclassified rows from
+its denominator, matching the existing PAP methodology. Unclassified rows retain
+their available measurements in coverage and measurement charts. Missing values
+are unavailable, never zero; means use only available values. Empty or malformed
+files fail closed with a message, without substituting a different dataset.
+
+OBU velocity, spin and paired horizontal/induced vertical break charts reuse the
+existing Plotly styles and full-arsenal color assignment. Chart axes explicitly
+label source units; break signs are retained without conversion or mirroring.
+Table break means use independent samples; scatter points require both source
+measurements. Missing measurements produce an explanation instead of an empty
+chart. **OBU spin/break units and coordinate conventions are undocumented:** they
+are not mapped to Statcast rpm or pfx movement in inches, and OBU Fastball is not
+assumed to mean Statcast four-seam. Comparisons to MLB tracking are unsupported.
+Pitch dates are missing, so all available observations for the selected pitcher
+are used without date filtering. Source location, release and event fields are
+not interpreted as validated Statcast coordinates or outcomes. Pitch-location,
+release-point, whiff-rate, strikeout and effectiveness analysis remain unavailable.
+Small samples describe the observations, not stable player performance.
+
+The Scouting Report tab generates a deterministic OBU report from the loaded
+observations with pitcher identity, source, dataset SHA-256, arsenal metrics,
+measurement coverage and descriptive usage observations. The preview and escaped,
+self-contained HTML download share the same report. Filenames include OBU, the
+pitcher name and dataset digest; no date is invented. OBU reports do not apply
+MLB effectiveness rules. MLB report generation and export remain unchanged.
+
+No dependencies or local run commands changed. Deploy the cleaned CSV alongside
+the Python files; no new secrets or external services are needed. The local CSV
+cache is keyed by file contents and separate from Statcast caching; missing files
+cannot be hidden by a previously cached result. Authentication runs before OBU
+loading and presentation, and no unauthenticated endpoint has been added.
+
+Offline regression checks:
+
+```bash
+python -m pytest -q
+python -m py_compile *.py scripts/*.py tests/*.py
+python -m compileall -q -x '(^|/)(\.venv|\.git)/' .
+node tests/deployment.cjs
+git diff --check
+```
+
+For deployment verification, open the GitHub Pages entry site, follow its
+Streamlit link, sign in using administrator-issued credentials, select OBU and
+verify all nine names. Generate an analysis and HTML report, switch pitchers and
+sources to check that old results/downloads disappear, then verify MLB name
+search, manual-ID fallback, date validation and an authorized Statcast request.
+Check all four tabs at desktop and mobile widths and confirm logout removes
+access. Live MLB downloads are deliberately excluded from automated tests.
